@@ -1,34 +1,44 @@
 // Scout background service worker
-// Handles Tavily search + OpenRouter (Claude) structuring
-// Content script sends { action, name, title, company }
-// Background sends back partial search results and final structured profile
+// Handles Tavily search + OpenRouter Claude STREAMING
+// Sends stream-token messages to content script for live text generation
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.action === "research") {
+    console.log("[Scout BG] Research request received:", msg.name);
     handleResearch(msg, sender.tab.id);
+  } else if (msg.action === "open-settings") {
+    chrome.tabs.create({ url: chrome.runtime.getURL("popup.html") });
   }
-  // Return false — we respond asynchronously via chrome.tabs.sendMessage
   return false;
 });
 
 async function handleResearch({ name, title, company }, tabId) {
-  // Load API keys
+  console.log("[Scout BG] === Starting research for:", name, "===");
+
+  // 1. Load API keys
   const data = await chrome.storage.local.get([
     "tavilyApiKey",
     "openrouterApiKey",
     "scoutEnabled",
   ]);
 
-  if (data.scoutEnabled === false) return;
+  console.log("[Scout BG] Keys loaded — tavily:", !!data.tavilyApiKey, "openrouter:", !!data.openrouterApiKey, "enabled:", data.scoutEnabled);
+
+  if (data.scoutEnabled === false) {
+    console.log("[Scout BG] Scout is disabled, aborting");
+    return;
+  }
 
   if (!data.tavilyApiKey || !data.openrouterApiKey) {
+    console.log("[Scout BG] Missing API keys");
     chrome.tabs.sendMessage(tabId, {
       action: "error",
-      message: "Set your API keys in Scout settings",
+      message: "Set your API keys in Scout settings (click gear icon in dock)",
     });
     return;
   }
 
+  // 2. Build search queries
   const companyStr = company || "";
   const queries = [
     `${name} ${companyStr}`.trim(),
@@ -42,7 +52,7 @@ async function handleResearch({ name, title, company }, tabId) {
     "Checking recent news",
   ];
 
-  // Notify content script that research started
+  // 3. Notify content script
   chrome.tabs.sendMessage(tabId, {
     action: "research-started",
     name,
@@ -51,11 +61,13 @@ async function handleResearch({ name, title, company }, tabId) {
     searchLabels,
   });
 
-  // Fire 3 searches in parallel, stream results as they complete
+  // 4. Fire 3 Tavily searches in parallel
+  console.log("[Scout BG] Firing 3 Tavily searches...");
   const allResults = [];
   const searchPromises = queries.map((query, index) =>
     tavilySearch(query, data.tavilyApiKey)
       .then((results) => {
+        console.log(`[Scout BG] Search ${index} ("${query.slice(0, 40)}...") => ${results.length} results`);
         allResults[index] = results;
         chrome.tabs.sendMessage(tabId, {
           action: "search-complete",
@@ -65,6 +77,7 @@ async function handleResearch({ name, title, company }, tabId) {
         return results;
       })
       .catch((err) => {
+        console.error(`[Scout BG] Search ${index} FAILED:`, err.message);
         allResults[index] = [];
         chrome.tabs.sendMessage(tabId, {
           action: "search-failed",
@@ -76,38 +89,28 @@ async function handleResearch({ name, title, company }, tabId) {
 
   await Promise.all(searchPromises);
 
-  // Check if we got any results at all
   const flatResults = allResults.flat();
+  console.log("[Scout BG] Total search results:", flatResults.length);
+
   if (flatResults.length === 0) {
-    chrome.tabs.sendMessage(tabId, {
-      action: "no-results",
-      name,
-    });
+    console.log("[Scout BG] No results found — aborting");
+    chrome.tabs.sendMessage(tabId, { action: "no-results", name });
     return;
   }
 
-  // Send to Claude for structuring
-  chrome.tabs.sendMessage(tabId, {
-    action: "structuring",
-  });
+  // 5. Stream Claude response
+  console.log("[Scout BG] Starting Claude streaming...");
+  chrome.tabs.sendMessage(tabId, { action: "structuring" });
 
   try {
-    const profile = await claudeStructure(
-      name,
-      title,
-      company,
-      flatResults,
-      data.openrouterApiKey
-    );
-    chrome.tabs.sendMessage(tabId, {
-      action: "profile-ready",
-      profile,
-    });
+    await claudeStream(name, title, company, flatResults, data.openrouterApiKey, tabId);
+    console.log("[Scout BG] === Research complete ===");
   } catch (err) {
-    // Fallback: show raw results
-    const fallbackItems = flatResults.slice(0, 10).map((r) => ({
+    console.error("[Scout BG] Claude stream FAILED:", err.message, err);
+    // Fallback: send raw results
+    const fallbackItems = flatResults.slice(0, 8).map((r) => ({
       title: r.title,
-      snippet: r.content ? r.content.slice(0, 120) : "",
+      snippet: r.content ? r.content.slice(0, 140) : "",
       url: r.url,
     }));
     chrome.tabs.sendMessage(tabId, {
@@ -117,7 +120,12 @@ async function handleResearch({ name, title, company }, tabId) {
   }
 }
 
+// ==========================================
+// TAVILY SEARCH
+// ==========================================
 async function tavilySearch(query, apiKey) {
+  console.log("[Scout BG] Tavily request:", query);
+
   const response = await fetch("https://api.tavily.com/search", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -130,23 +138,56 @@ async function tavilySearch(query, apiKey) {
   });
 
   if (!response.ok) {
+    const errText = await response.text();
+    console.error("[Scout BG] Tavily HTTP error:", response.status, errText);
     throw new Error(`Tavily error: ${response.status}`);
   }
 
-  const data = await response.json();
-  return data.results || [];
+  const json = await response.json();
+  console.log("[Scout BG] Tavily response — results:", json.results?.length || 0);
+  return json.results || [];
 }
 
-async function claudeStructure(name, title, company, searchResults, apiKey) {
+// ==========================================
+// CLAUDE STREAMING via OpenRouter
+// ==========================================
+async function claudeStream(name, title, company, searchResults, apiKey, tabId) {
+  // Build context from search results
   const resultsText = searchResults
-    .map(
-      (r) =>
-        `Title: ${r.title}\nURL: ${r.url}\nContent: ${r.content || "N/A"}`
-    )
+    .map((r) => `Title: ${r.title}\nURL: ${r.url}\nContent: ${r.content || "N/A"}`)
     .join("\n\n---\n\n");
 
   const titleStr = title ? `, ${title}` : "";
   const companyStr = company ? ` at ${company}` : "";
+
+  const prompt = `You are Scout, an AI assistant helping write personalized LinkedIn cold messages to ${name}${titleStr}${companyStr}.
+
+Here is public web information found about them:
+
+${resultsText}
+
+Write a brief research briefing with these exact section headers (ALL CAPS, each on its own line):
+
+BACKGROUND
+[1-2 sentences: who they are and what they do, beyond their job title]
+
+TALKING POINTS
+\u2022 [Specific, concrete fact from search results \u2014 good conversation starter]
+\u2022 [Another detail about their work, project, or achievement]
+\u2022 [Something recent, notable, or personal to connect on]
+
+SUGGESTED OPENER
+[A natural, personalized opening message for a cold LinkedIn DM. Reference one specific talking point. Keep it under 3 sentences. Sound genuine, not salesy.]
+
+Rules:
+- 3-5 talking points, each specific and under 20 words
+- Focus on: recent work, publications, talks, articles, projects, interests
+- Skip generic info already visible on LinkedIn (job title, company name)
+- If search results are thin, extract whatever is most specific and personal
+- Write in a clean, direct style \u2014 no filler words`;
+
+  console.log("[Scout BG] Claude prompt length:", prompt.length, "chars");
+  console.log("[Scout BG] Sending streaming request to OpenRouter...");
 
   const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
@@ -159,57 +200,71 @@ async function claudeStructure(name, title, company, searchResults, apiKey) {
     body: JSON.stringify({
       model: "anthropic/claude-sonnet-4-20250514",
       max_tokens: 1024,
-      messages: [
-        {
-          role: "user",
-          content: `You are helping someone write a personalized cold message on LinkedIn to ${name}${titleStr}${companyStr}.
-
-Here is public web information found about them:
-
-${resultsText}
-
-Extract the most useful information for writing a personalized cold message. Return ONLY valid JSON with no markdown fencing:
-
-{
-  "talking_points": [
-    "Specific thing about their work you could reference",
-    "Recent achievement or project to mention",
-    "Interest or background to connect on"
-  ],
-  "background": "One sentence: who they are and what they do",
-  "source_count": ${searchResults.length}
-}
-
-Rules:
-- talking_points: 3-5 specific, concrete facts from the search results that would make good conversation starters
-- Each talking point should be under 20 words
-- Focus on: recent work, publications, talks, articles, projects, interests
-- Skip generic info like job titles (that's already visible on LinkedIn)
-- If search results are thin, extract whatever is most specific/personal
-- Return ONLY the JSON object, no other text`,
-        },
-      ],
+      stream: true,
+      messages: [{ role: "user", content: prompt }],
     }),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("[Scout] OpenRouter error:", response.status, errorText);
+    console.error("[Scout BG] OpenRouter HTTP error:", response.status, errorText);
     throw new Error(`OpenRouter error: ${response.status} - ${errorText}`);
   }
 
-  const result = await response.json();
-  console.log("[Scout] OpenRouter response:", result);
+  console.log("[Scout BG] Stream response started — reading chunks...");
 
-  const text = result.choices[0].message.content;
-  console.log("[Scout] Claude output:", text);
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let fullText = "";
+  let chunkCount = 0;
 
-  // Parse JSON from response — handle possible markdown fencing
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
-    console.error("[Scout] Could not find JSON in response:", text);
-    throw new Error("Could not parse response as JSON");
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) {
+      console.log("[Scout BG] Stream reader done");
+      break;
+    }
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() || ""; // Keep incomplete last line
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || !trimmed.startsWith("data: ")) continue;
+
+      const payload = trimmed.slice(6);
+      if (payload === "[DONE]") {
+        console.log("[Scout BG] Received [DONE] signal");
+        continue;
+      }
+
+      try {
+        const json = JSON.parse(payload);
+        const delta = json.choices?.[0]?.delta?.content || "";
+        if (delta) {
+          fullText += delta;
+          chunkCount++;
+          // Send each token to content script for live rendering
+          chrome.tabs.sendMessage(tabId, {
+            action: "stream-token",
+            text: delta,
+          });
+        }
+      } catch (e) {
+        // Skip malformed SSE chunks (e.g. comments, empty data)
+        console.log("[Scout BG] Skipped non-JSON chunk:", trimmed.slice(0, 60));
+      }
+    }
   }
 
-  return JSON.parse(jsonMatch[0]);
+  console.log("[Scout BG] Stream complete — total chunks:", chunkCount, "total chars:", fullText.length);
+  console.log("[Scout BG] Full response:\n", fullText);
+
+  // Signal completion
+  chrome.tabs.sendMessage(tabId, {
+    action: "stream-done",
+    fullText,
+  });
 }
