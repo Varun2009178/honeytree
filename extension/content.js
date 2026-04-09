@@ -262,13 +262,11 @@
   // --- DOM DETECTION ---
 
   function detectRecipient() {
-    // Strategy: find the compose textbox, then walk up to find the conversation header
-    // LinkedIn uses role="textbox" or contenteditable for the message input
+    // Strategy 1: find compose textbox, walk up to conversation header
     const textboxes = document.querySelectorAll(
       '[role="textbox"][contenteditable="true"]'
     );
 
-    // Find the one inside the messaging area
     let composeBox = null;
     for (const tb of textboxes) {
       if (isInMessagingArea(tb)) {
@@ -277,20 +275,46 @@
       }
     }
 
-    if (!composeBox) return null;
+    // Strategy 2: if no role="textbox", try contenteditable divs/p elements
+    if (!composeBox) {
+      const editables = document.querySelectorAll(
+        '[contenteditable="true"]'
+      );
+      for (const el of editables) {
+        if (isInMessagingArea(el)) {
+          composeBox = el;
+          break;
+        }
+      }
+    }
 
-    // Walk up from compose box to find conversation header
-    // The header contains the recipient's name (typically h2 or a prominent link)
+    if (!composeBox) {
+      console.log("[Scout] No compose box found");
+      return null;
+    }
+
+    console.log("[Scout] Found compose box:", composeBox.tagName, composeBox.className);
+
     const conversationContainer = findConversationContainer(composeBox);
-    if (!conversationContainer) return null;
+    if (!conversationContainer) {
+      console.log("[Scout] No conversation container found");
+      // Fallback: search the whole page for a name
+      return detectRecipientFallback();
+    }
+
+    console.log("[Scout] Found container:", conversationContainer.tagName);
 
     const nameEl = findNameElement(conversationContainer);
-    if (!nameEl) return null;
+    if (!nameEl) {
+      console.log("[Scout] No name element found in container");
+      return detectRecipientFallback();
+    }
 
     const name = nameEl.textContent.trim();
     if (!name) return null;
 
-    // Title/company is usually in a subtitle element near the name
+    console.log("[Scout] Detected recipient:", name);
+
     const titleCompany = findTitleCompany(conversationContainer, nameEl);
 
     return {
@@ -300,13 +324,50 @@
     };
   }
 
+  function detectRecipientFallback() {
+    // Fallback: look for conversation header patterns anywhere on the page
+    // LinkedIn messaging typically has the person's name in an h2 within
+    // a thread/conversation pane
+
+    // Try: any h2 inside an element that also contains a compose area
+    const allH2s = document.querySelectorAll("h2");
+    for (const h2 of allH2s) {
+      const text = h2.textContent.trim();
+      if (text && text.length > 1 && text.length < 60) {
+        // Check if this h2 is near the messaging area (same parent tree)
+        const parent = h2.closest('[class*="thread"], [class*="conversation"], [class*="msg"], [data-control-name]');
+        if (parent || window.location.pathname.includes("/messaging")) {
+          console.log("[Scout] Fallback detected name from h2:", text);
+          return { name: text, title: "", company: "" };
+        }
+      }
+    }
+
+    // Try: profile links with /in/ in the messaging area
+    const profileLinks = document.querySelectorAll('a[href*="/in/"]');
+    for (const link of profileLinks) {
+      const text = link.textContent.trim();
+      // Look for links that seem like a person name (not navigation links)
+      if (text && text.length > 3 && text.length < 60 && !text.includes("LinkedIn")) {
+        const rect = link.getBoundingClientRect();
+        // Only consider visible, prominently placed links (top half of page)
+        if (rect.top > 0 && rect.top < window.innerHeight / 2 && rect.width > 50) {
+          console.log("[Scout] Fallback detected name from profile link:", text);
+          return { name: text, title: "", company: "" };
+        }
+      }
+    }
+
+    console.log("[Scout] Fallback detection also failed");
+    return null;
+  }
+
   function isInMessagingArea(element) {
     // Walk up ancestors looking for messaging-related containers
     let current = element;
     let depth = 0;
     while (current && depth < 20) {
-      // Check for messaging-related attributes and URL patterns
-      const classes = current.className || "";
+      const classes = typeof current.className === "string" ? current.className : "";
       const id = current.id || "";
       if (
         classes.includes("messaging") ||
@@ -711,6 +772,11 @@
   }
 
   // --- INIT ---
+
+  console.log("[Scout] Content script loaded on", window.location.href);
+
+  // Show sidebar immediately so user knows Scout is active
+  ensureSidebar();
 
   const observer = new MutationObserver(onDomChange);
   observer.observe(document.body, { childList: true, subtree: true });
