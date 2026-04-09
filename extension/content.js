@@ -1,5 +1,5 @@
 // Scout content script — Liquid Glass dock + Frosted floating panel + Streaming
-// Detects LinkedIn DM recipient, triggers research, streams results live
+// Auto-detects light/dark mode and inverts: dark dock on light pages, light dock on dark pages
 
 (function () {
   "use strict";
@@ -17,6 +17,7 @@
   let isResearching = false;
   let panelVisible = false;
   let suggestedOpener = "";
+  let currentTheme = "dark"; // "dark" = dark dock (light page), "light" = light dock (dark page)
   // Drag state
   let isDragging = false;
   let dragStartX = 0;
@@ -27,6 +28,43 @@
   let lastCheckedUrl = "";
   let lastCheckedTitle = "";
   let debounceTimer = null;
+
+  // ==========================================
+  // THEME DETECTION
+  // ==========================================
+  function detectPageTheme() {
+    // Check page background brightness — dark dock on light pages, light dock on dark pages
+    const bg = getComputedStyle(document.body).backgroundColor;
+    const match = bg.match(/\d+/g);
+    if (match) {
+      const [r, g, b] = match.map(Number);
+      const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+      return brightness > 128 ? "dark" : "light";
+    }
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "light" : "dark";
+  }
+
+  function applyTheme() {
+    const theme = detectPageTheme();
+    if (theme === currentTheme) return;
+    currentTheme = theme;
+    console.log("[Scout] Theme changed to:", theme);
+
+    if (dockShadow) {
+      const dock = dockShadow.querySelector(".dock");
+      if (dock) {
+        dock.classList.remove("theme-dark", "theme-light");
+        dock.classList.add("theme-" + theme);
+      }
+    }
+    if (panelShadow) {
+      const panel = panelShadow.querySelector(".scout-panel");
+      if (panel) {
+        panel.classList.remove("theme-dark", "theme-light");
+        panel.classList.add("theme-" + theme);
+      }
+    }
+  }
 
   // ==========================================
   // SVG ICONS (inline for shadow DOM)
@@ -40,8 +78,7 @@
   };
 
   // ==========================================
-  // SVG GLASS DISTORTION FILTER
-  // (ported from liquid-glass.tsx)
+  // SVG GLASS DISTORTION FILTER (from liquid-glass.tsx)
   // ==========================================
   const GLASS_FILTER_SVG = `
     <svg style="position:absolute;width:0;height:0;pointer-events:none;">
@@ -63,7 +100,7 @@
   `;
 
   // ==========================================
-  // DOCK CSS (Liquid Glass — adapted from liquid-glass.tsx)
+  // DOCK CSS — uses CSS custom properties for theme switching
   // ==========================================
   const DOCK_CSS = `
     :host {
@@ -77,7 +114,36 @@
       pointer-events: none;
     }
 
-    /* --- Liquid Glass Dock Container --- */
+    /* --- Theme: dark dock (shown on light pages) --- */
+    .dock.theme-dark {
+      --glass-tint: rgba(20, 20, 30, 0.6);
+      --glass-border: rgba(255, 255, 255, 0.12);
+      --shine-top: rgba(255, 255, 255, 0.15);
+      --shine-bottom: rgba(255, 255, 255, 0.05);
+      --icon-color: rgba(255, 255, 255, 0.65);
+      --icon-hover-color: #fff;
+      --icon-hover-bg: rgba(255, 255, 255, 0.1);
+      --separator-color: rgba(255, 255, 255, 0.1);
+      --dock-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+      --tooltip-bg: rgba(255, 255, 255, 0.9);
+      --tooltip-color: rgba(0, 0, 0, 0.8);
+    }
+
+    /* --- Theme: light dock (shown on dark pages) --- */
+    .dock.theme-light {
+      --glass-tint: rgba(255, 255, 255, 0.35);
+      --glass-border: rgba(255, 255, 255, 0.45);
+      --shine-top: rgba(255, 255, 255, 0.5);
+      --shine-bottom: rgba(255, 255, 255, 0.2);
+      --icon-color: rgba(0, 0, 0, 0.5);
+      --icon-hover-color: rgba(0, 0, 0, 0.85);
+      --icon-hover-bg: rgba(255, 255, 255, 0.3);
+      --separator-color: rgba(0, 0, 0, 0.08);
+      --dock-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+      --tooltip-bg: rgba(0, 0, 0, 0.75);
+      --tooltip-color: rgba(255, 255, 255, 0.9);
+    }
+
     .dock {
       pointer-events: auto;
       position: relative;
@@ -85,7 +151,7 @@
       overflow: hidden;
       border-radius: 24px;
       padding: 10px 14px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08), 0 0 1px rgba(0, 0, 0, 0.12);
+      box-shadow: var(--dock-shadow);
       transition: all 0.7s cubic-bezier(0.175, 0.885, 0.32, 2.2);
       cursor: default;
     }
@@ -95,127 +161,88 @@
       border-radius: 28px;
     }
 
-    /* Glass layer 1: backdrop blur + distortion filter */
     .dock .glass-layer-blur {
-      position: absolute;
-      inset: 0;
-      z-index: 0;
-      overflow: hidden;
-      border-radius: inherit;
+      position: absolute; inset: 0; z-index: 0;
+      overflow: hidden; border-radius: inherit;
       backdrop-filter: blur(24px) saturate(200%);
       -webkit-backdrop-filter: blur(24px) saturate(200%);
       filter: url(#scout-glass-distortion);
       isolation: isolate;
     }
 
-    /* Glass layer 2: neutral frosted tint — adapts to any background */
     .dock .glass-layer-tint {
-      position: absolute;
-      inset: 0;
-      z-index: 10;
+      position: absolute; inset: 0; z-index: 10;
       border-radius: inherit;
-      background: rgba(255, 255, 255, 0.35);
+      background: var(--glass-tint);
     }
 
-    /* Glass layer 3: inset highlights (depth) */
     .dock .glass-layer-shine {
-      position: absolute;
-      inset: 0;
-      z-index: 20;
-      border-radius: inherit;
-      overflow: hidden;
-      box-shadow:
-        inset 0 1px 0 0 rgba(255, 255, 255, 0.5),
-        inset 0 -1px 0 0 rgba(255, 255, 255, 0.2);
-      border: 1px solid rgba(255, 255, 255, 0.45);
+      position: absolute; inset: 0; z-index: 20;
+      border-radius: inherit; overflow: hidden;
+      box-shadow: inset 0 1px 0 0 var(--shine-top), inset 0 -1px 0 0 var(--shine-bottom);
+      border: 1px solid var(--glass-border);
     }
 
-    /* Dock items row */
     .dock-content {
-      position: relative;
-      z-index: 30;
-      display: flex;
-      align-items: center;
-      gap: 4px;
+      position: relative; z-index: 30;
+      display: flex; align-items: center; gap: 4px;
     }
 
-    /* Individual dock icon button */
     .dock-item {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 40px;
-      height: 40px;
-      border: none;
-      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      width: 40px; height: 40px;
+      border: none; border-radius: 12px;
       background: transparent;
-      color: rgba(0, 0, 0, 0.5);
+      color: var(--icon-color);
       cursor: pointer;
       transition: all 0.7s cubic-bezier(0.175, 0.885, 0.32, 2.2);
-      position: relative;
-      transform-origin: center center;
+      position: relative; transform-origin: center center;
     }
 
     .dock-item:hover {
-      color: rgba(0, 0, 0, 0.8);
+      color: var(--icon-hover-color);
       transform: scale(1.2);
-      background: rgba(255, 255, 255, 0.25);
+      background: var(--icon-hover-bg);
       box-shadow: 0 0 12px rgba(99, 102, 241, 0.2);
     }
 
-    .dock-item:active {
-      transform: scale(0.92);
-    }
+    .dock-item:active { transform: scale(0.92); }
 
     .dock-item.active {
       color: #6366f1;
-      background: rgba(99, 102, 241, 0.1);
+      background: rgba(99, 102, 241, 0.12);
     }
 
-    /* Pulsing glow when name detected */
-    .dock-item.pulsing {
-      animation: dockGlow 2s ease-in-out infinite;
-    }
+    .dock-item.pulsing { animation: dockGlow 2s ease-in-out infinite; }
 
-    /* Spinning ring during research */
     .dock-item.loading::after {
-      content: '';
-      position: absolute;
-      inset: -3px;
+      content: ''; position: absolute; inset: -3px;
       border-radius: 14px;
       border: 2px solid transparent;
       border-top-color: #6366f1;
       animation: dockSpin 0.8s linear infinite;
     }
 
-    /* Tooltip */
     .dock-item .tooltip {
-      position: absolute;
-      bottom: -30px;
-      left: 50%;
+      position: absolute; bottom: -30px; left: 50%;
       transform: translateX(-50%) scale(0.9);
       padding: 4px 10px;
-      background: rgba(0, 0, 0, 0.75);
-      color: rgba(255, 255, 255, 0.9);
-      font-size: 11px;
-      font-weight: 500;
-      border-radius: 8px;
-      white-space: nowrap;
-      opacity: 0;
-      pointer-events: none;
+      background: var(--tooltip-bg);
+      color: var(--tooltip-color);
+      font-size: 11px; font-weight: 500;
+      border-radius: 8px; white-space: nowrap;
+      opacity: 0; pointer-events: none;
       transition: all 0.2s ease;
       backdrop-filter: blur(8px);
     }
 
     .dock-item:hover .tooltip {
-      opacity: 1;
-      transform: translateX(-50%) scale(1);
+      opacity: 1; transform: translateX(-50%) scale(1);
     }
 
     .dock-separator {
-      width: 1px;
-      height: 20px;
-      background: rgba(0, 0, 0, 0.08);
+      width: 1px; height: 20px;
+      background: var(--separator-color);
       margin: 0 4px;
     }
 
@@ -223,26 +250,49 @@
       0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
       50% { box-shadow: 0 0 12px 4px rgba(99, 102, 241, 0.2); }
     }
-
-    @keyframes dockSpin {
-      to { transform: rotate(360deg); }
-    }
+    @keyframes dockSpin { to { transform: rotate(360deg); } }
   `;
 
   // ==========================================
-  // PANEL CSS (Frosted Dark Glass — floating, draggable)
+  // PANEL CSS — theme-aware frosted glass
   // ==========================================
   const PANEL_CSS = `
     :host {
       all: initial;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 0;
-      height: 0;
+      position: fixed; top: 0; left: 0; width: 0; height: 0;
       z-index: 2147483646;
       font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
       pointer-events: none;
+    }
+
+    /* --- Theme: dark panel (light pages) --- */
+    .scout-panel.theme-dark {
+      --panel-bg: rgba(20, 20, 30, 0.72);
+      --panel-border: rgba(255, 255, 255, 0.1);
+      --panel-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+      --text-primary: rgba(255, 255, 255, 0.88);
+      --text-secondary: rgba(255, 255, 255, 0.5);
+      --text-muted: rgba(255, 255, 255, 0.25);
+      --border-subtle: rgba(255, 255, 255, 0.06);
+      --hover-bg: rgba(255, 255, 255, 0.08);
+      --scrollbar-thumb: rgba(255, 255, 255, 0.1);
+      --dot-failed: rgba(255, 255, 255, 0.15);
+      --fallback-border: rgba(255, 255, 255, 0.05);
+    }
+
+    /* --- Theme: light panel (dark pages) --- */
+    .scout-panel.theme-light {
+      --panel-bg: rgba(255, 255, 255, 0.45);
+      --panel-border: rgba(255, 255, 255, 0.55);
+      --panel-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+      --text-primary: rgba(0, 0, 0, 0.78);
+      --text-secondary: rgba(0, 0, 0, 0.5);
+      --text-muted: rgba(0, 0, 0, 0.25);
+      --border-subtle: rgba(0, 0, 0, 0.06);
+      --hover-bg: rgba(0, 0, 0, 0.06);
+      --scrollbar-thumb: rgba(0, 0, 0, 0.1);
+      --dot-failed: rgba(0, 0, 0, 0.15);
+      --fallback-border: rgba(0, 0, 0, 0.05);
     }
 
     .scout-panel {
@@ -252,185 +302,130 @@
       left: calc(50% - 180px);
       width: 360px;
       max-height: calc(100vh - 120px);
-      background: rgba(255, 255, 255, 0.45);
+      background: var(--panel-bg);
       backdrop-filter: blur(28px) saturate(200%);
       -webkit-backdrop-filter: blur(28px) saturate(200%);
-      border: 1px solid rgba(255, 255, 255, 0.55);
+      border: 1px solid var(--panel-border);
       border-radius: 20px;
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1), 0 0 1px rgba(0, 0, 0, 0.1);
+      box-shadow: var(--panel-shadow);
       overflow: hidden;
-      display: flex;
-      flex-direction: column;
+      display: flex; flex-direction: column;
       opacity: 0;
       transition: opacity 0.25s ease;
     }
 
-    .scout-panel.visible {
-      opacity: 1;
-    }
+    .scout-panel.visible { opacity: 1; }
 
-    /* --- Header (drag handle) --- */
     .panel-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+      display: flex; align-items: center; justify-content: space-between;
       padding: 14px 18px 10px;
-      cursor: grab;
-      user-select: none;
-      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+      cursor: grab; user-select: none;
+      border-bottom: 1px solid var(--border-subtle);
       flex-shrink: 0;
     }
-
     .panel-header:active { cursor: grabbing; }
 
-    .panel-header-left {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
+    .panel-header-left { display: flex; align-items: center; gap: 10px; }
     .panel-header-icon { color: #6366f1; display: flex; }
 
     .panel-title {
-      font-size: 14px;
-      font-weight: 600;
-      color: rgba(0, 0, 0, 0.8);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      max-width: 250px;
+      font-size: 14px; font-weight: 600;
+      color: var(--text-primary);
+      overflow: hidden; text-overflow: ellipsis;
+      white-space: nowrap; max-width: 250px;
     }
 
     .panel-close {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 26px;
-      height: 26px;
-      border: none;
-      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      width: 26px; height: 26px;
+      border: none; border-radius: 8px;
       background: transparent;
-      color: rgba(0, 0, 0, 0.3);
-      cursor: pointer;
-      transition: all 0.15s ease;
+      color: var(--text-muted);
+      cursor: pointer; transition: all 0.15s ease;
     }
     .panel-close:hover {
-      background: rgba(0, 0, 0, 0.06);
-      color: rgba(0, 0, 0, 0.6);
+      background: var(--hover-bg);
+      color: var(--text-secondary);
     }
 
-    /* --- Body --- */
     .panel-body {
       padding: 14px 18px 18px;
-      overflow-y: auto;
-      flex: 1;
+      overflow-y: auto; flex: 1;
       max-height: calc(100vh - 200px);
     }
-
     .panel-body::-webkit-scrollbar { width: 3px; }
     .panel-body::-webkit-scrollbar-track { background: transparent; }
-    .panel-body::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 2px; }
+    .panel-body::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 2px; }
 
-    /* --- Search progress lines --- */
     .search-line {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 7px 0;
-      font-size: 12.5px;
-      color: rgba(0, 0, 0, 0.5);
-      opacity: 0;
-      animation: fadeIn 0.35s ease forwards;
+      display: flex; align-items: center; gap: 10px;
+      padding: 7px 0; font-size: 12.5px;
+      color: var(--text-secondary);
+      opacity: 0; animation: fadeIn 0.35s ease forwards;
     }
 
-    .search-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #6366f1;
-      flex-shrink: 0;
-    }
+    .search-dot { width: 6px; height: 6px; border-radius: 50%; background: #6366f1; flex-shrink: 0; }
     .search-dot.active { animation: dotPulse 1.2s ease-in-out infinite; }
     .search-dot.done { background: #22c55e; }
-    .search-dot.failed { background: rgba(0,0,0,0.15); }
+    .search-dot.failed { background: var(--dot-failed); }
 
-    .search-status {
-      margin-left: auto;
-      font-size: 10.5px;
-      color: rgba(0, 0, 0, 0.25);
-    }
+    .search-status { margin-left: auto; font-size: 10.5px; color: var(--text-muted); }
 
-    /* --- Streaming text area --- */
     .stream-content {
-      font-size: 13px;
-      line-height: 1.75;
-      color: rgba(0, 0, 0, 0.78);
-      white-space: pre-wrap;
-      word-wrap: break-word;
+      font-size: 13px; line-height: 1.75;
+      color: var(--text-primary);
+      white-space: pre-wrap; word-wrap: break-word;
       letter-spacing: 0.01em;
     }
 
     .section-label {
       display: block;
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
+      font-size: 10px; font-weight: 700;
+      letter-spacing: 0.12em; text-transform: uppercase;
       color: #6366f1;
-      margin-top: 18px;
-      margin-bottom: 4px;
+      margin-top: 18px; margin-bottom: 4px;
     }
-
     .section-label:first-child { margin-top: 0; }
 
     .stream-cursor {
-      display: inline-block;
-      width: 2px;
-      height: 1.1em;
-      background: #6366f1;
-      vertical-align: text-bottom;
-      margin-left: 2px;
-      animation: cursorBlink 1s step-end infinite;
+      display: inline-block; width: 2px; height: 1.1em;
+      background: #6366f1; vertical-align: text-bottom;
+      margin-left: 2px; animation: cursorBlink 1s step-end infinite;
     }
 
-    /* --- Footer --- */
     .panel-footer {
       padding: 10px 18px;
-      border-top: 1px solid rgba(0, 0, 0, 0.06);
-      font-size: 10.5px;
-      color: rgba(0, 0, 0, 0.3);
+      border-top: 1px solid var(--border-subtle);
+      font-size: 10.5px; color: var(--text-muted);
       flex-shrink: 0;
     }
 
-    /* --- States --- */
     .idle-msg {
-      text-align: center;
-      padding: 36px 16px;
-      color: rgba(0, 0, 0, 0.3);
-      font-size: 12.5px;
-      line-height: 1.6;
+      text-align: center; padding: 36px 16px;
+      color: var(--text-muted); font-size: 12.5px; line-height: 1.6;
     }
 
     .error-msg {
-      text-align: center;
-      padding: 24px 16px;
-      color: #dc2626;
-      font-size: 12.5px;
+      text-align: center; padding: 24px 16px;
+      color: #dc2626; font-size: 12.5px;
     }
+
+    .fallback-item {
+      padding: 6px 0;
+      border-bottom: 1px solid var(--fallback-border);
+    }
+    .fallback-title { color: var(--text-primary); font-size: 12.5px; font-weight: 500; }
+    .fallback-snippet { color: var(--text-secondary); font-size: 11.5px; margin-top: 2px; }
 
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(4px); }
       to { opacity: 1; transform: translateY(0); }
     }
-
     @keyframes dotPulse {
       0%, 100% { opacity: 1; transform: scale(1); }
       50% { opacity: 0.3; transform: scale(0.7); }
     }
-
-    @keyframes cursorBlink {
-      50% { opacity: 0; }
-    }
+    @keyframes cursorBlink { 50% { opacity: 0; } }
   `;
 
   // ==========================================
@@ -446,7 +441,6 @@
   // NAME DETECTION
   // ==========================================
   function detectRecipient() {
-    // 1. Page title: "FirstName LastName | LinkedIn"
     const title = document.title || "";
     const m = title.match(/^(.+?)\s*[\|–—-]\s*(?:LinkedIn|Messaging)/i);
     if (m) {
@@ -456,7 +450,6 @@
         return { name, title: "", company: "" };
       }
     }
-    // 2. h2 elements (LinkedIn uses h2 for conversation partner names)
     const h2s = document.querySelectorAll("h2");
     for (const h2 of h2s) {
       const t = h2.textContent.trim();
@@ -465,7 +458,6 @@
         return { name: t, title: "", company: "" };
       }
     }
-    // 3. Profile links
     const links = document.querySelectorAll('a[href*="/in/"]');
     for (const link of links) {
       const t = link.textContent.trim();
@@ -487,24 +479,24 @@
   function createDock() {
     if (dockRoot) return;
 
+    currentTheme = detectPageTheme();
+
     dockRoot = document.createElement("div");
     dockRoot.id = "scout-dock-root";
     document.body.appendChild(dockRoot);
     dockShadow = dockRoot.attachShadow({ mode: "open" });
 
-    // Style
     const style = document.createElement("style");
     style.textContent = DOCK_CSS;
     dockShadow.appendChild(style);
 
-    // SVG glass filter (must live inside this shadow root)
     const filterContainer = document.createElement("div");
     filterContainer.innerHTML = GLASS_FILTER_SVG;
     dockShadow.appendChild(filterContainer);
 
-    // Dock element — liquid glass layering from liquid-glass.tsx
+    // Dock layout: Scout | sep | Research | Settings | sep | Copy (far right)
     const dock = document.createElement("div");
-    dock.className = "dock";
+    dock.className = "dock theme-" + currentTheme;
     dock.innerHTML = `
       <div class="glass-layer-blur"></div>
       <div class="glass-layer-tint"></div>
@@ -519,14 +511,14 @@
           ${ICONS.research}
           <span class="tooltip">Research</span>
         </button>
-        <button class="dock-item" id="dock-copy">
-          ${ICONS.copy}
-          <span class="tooltip">Copy</span>
-        </button>
-        <div class="dock-separator"></div>
         <button class="dock-item" id="dock-settings">
           ${ICONS.settings}
           <span class="tooltip">Settings</span>
+        </button>
+        <div class="dock-separator"></div>
+        <button class="dock-item" id="dock-copy">
+          ${ICONS.copy}
+          <span class="tooltip">Copy DM</span>
         </button>
       </div>
     `;
@@ -546,17 +538,17 @@
       }
     });
 
+    dockShadow.getElementById("dock-settings").addEventListener("click", () => {
+      chrome.runtime.sendMessage({ action: "open-settings" });
+    });
+
     dockShadow.getElementById("dock-copy").addEventListener("click", () => {
       if (!suggestedOpener) return;
       navigator.clipboard.writeText(suggestedOpener).then(() => {
         const btn = dockShadow.getElementById("dock-copy");
-        btn.style.color = "#34d399";
+        btn.style.color = "#22c55e";
         setTimeout(() => { btn.style.color = ""; }, 1500);
       });
-    });
-
-    dockShadow.getElementById("dock-settings").addEventListener("click", () => {
-      chrome.runtime.sendMessage({ action: "open-settings" });
     });
   }
 
@@ -573,7 +565,7 @@
   }
 
   // ==========================================
-  // PANEL (Frosted Dark Glass, floating, draggable)
+  // PANEL (Frosted Glass, floating, draggable)
   // ==========================================
   function createPanel() {
     if (panelRoot) return;
@@ -588,7 +580,7 @@
     panelShadow.appendChild(style);
 
     const panel = document.createElement("div");
-    panel.className = "scout-panel";
+    panel.className = "scout-panel theme-" + currentTheme;
     panel.innerHTML = `
       <div class="panel-header" id="panel-drag-handle">
         <div class="panel-header-left">
@@ -603,10 +595,7 @@
     `;
     panelShadow.appendChild(panel);
 
-    // Close button
     panelShadow.getElementById("panel-close").addEventListener("click", hidePanel);
-
-    // Init dragging
     initDrag(panel, panelShadow.getElementById("panel-drag-handle"));
   }
 
@@ -620,15 +609,12 @@
 
   function hidePanel() {
     if (!panelShadow) return;
-    const panel = panelShadow.querySelector(".scout-panel");
-    panel.classList.remove("visible");
+    panelShadow.querySelector(".scout-panel").classList.remove("visible");
     panelVisible = false;
     if (dockShadow) dockShadow.getElementById("dock-scout").classList.remove("active");
   }
 
-  function togglePanel() {
-    panelVisible ? hidePanel() : showPanel();
-  }
+  function togglePanel() { panelVisible ? hidePanel() : showPanel(); }
 
   function setPanelTitle(text) {
     if (!panelShadow) return;
@@ -656,18 +642,12 @@
       panelStartY = rect.top;
       e.preventDefault();
     });
-
     window.addEventListener("mousemove", (e) => {
       if (!isDragging) return;
-      const dx = e.clientX - dragStartX;
-      const dy = e.clientY - dragStartY;
-      panel.style.left = (panelStartX + dx) + "px";
-      panel.style.top = (panelStartY + dy) + "px";
+      panel.style.left = (panelStartX + e.clientX - dragStartX) + "px";
+      panel.style.top = (panelStartY + e.clientY - dragStartY) + "px";
     });
-
-    window.addEventListener("mouseup", () => {
-      isDragging = false;
-    });
+    window.addEventListener("mouseup", () => { isDragging = false; });
   }
 
   // ==========================================
@@ -677,20 +657,14 @@
     if (!panelShadow) return;
     const container = panelShadow.getElementById("stream-text");
     if (!container) return;
-
     streamedText += text;
-
-    // Format with styled section headings
     container.innerHTML = formatStreamedText(streamedText) + '<span class="stream-cursor"></span>';
-
-    // Auto-scroll
     const body = panelShadow.getElementById("panel-body");
     if (body) body.scrollTop = body.scrollHeight;
   }
 
   function formatStreamedText(raw) {
     let html = escapeHtml(raw);
-    // Style section headers
     html = html.replace(/^(WHO THEY ARE)\n/gm, '<span class="section-label">$1</span>');
     html = html.replace(/^(DM HOOKS)\n/gm, '<span class="section-label">$1</span>');
     html = html.replace(/^(COLD DM)\n/gm, '<span class="section-label">$1</span>');
@@ -699,24 +673,19 @@
 
   function finishStream() {
     if (!panelShadow) return;
-
-    // Remove cursor
     const cursor = panelShadow.querySelector(".stream-cursor");
     if (cursor) cursor.remove();
 
-    // Extract cold DM for copy button
     const match = streamedText.match(/COLD DM\n([\s\S]*?)$/);
     if (match) suggestedOpener = match[1].trim();
 
-    // Add footer
     const body = panelShadow.getElementById("panel-body");
     if (body) {
       const footer = document.createElement("div");
       footer.className = "panel-footer";
-      footer.textContent = "Done — click Copy in dock to grab the cold DM";
+      footer.textContent = "Done — click Copy DM in dock to grab the message";
       body.appendChild(footer);
     }
-
     setDockLoading(false);
     isResearching = false;
   }
@@ -726,7 +695,6 @@
   // ==========================================
   function startResearch(name) {
     if (isResearching && name === currentName) return;
-
     console.log("[Scout] Starting research for:", name);
     currentName = name;
     lastResearchedName = name;
@@ -746,12 +714,7 @@
       </div>
     `);
 
-    chrome.runtime.sendMessage({
-      action: "research",
-      name,
-      title: "",
-      company: "",
-    });
+    chrome.runtime.sendMessage({ action: "research", name, title: "", company: "" });
   }
 
   // ==========================================
@@ -798,7 +761,6 @@
       }
 
       case "structuring":
-        // Switch to streaming view
         setPanelBody('<div class="stream-content" id="stream-text"><span class="stream-cursor"></span></div>');
         break;
 
@@ -828,9 +790,9 @@
         setDockLoading(false);
         isResearching = false;
         const items = (msg.items || []).map(item =>
-          `<div style="padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.05);">
-            <div style="color:rgba(0,0,0,0.78);font-size:12.5px;font-weight:500;">${escapeHtml(item.title)}</div>
-            <div style="color:rgba(0,0,0,0.45);font-size:11.5px;margin-top:2px;">${escapeHtml(item.snippet)}</div>
+          `<div class="fallback-item">
+            <div class="fallback-title">${escapeHtml(item.title)}</div>
+            <div class="fallback-snippet">${escapeHtml(item.snippet)}</div>
           </div>`
         ).join("");
         setPanelBody(items || '<div class="idle-msg">No results</div>');
@@ -845,13 +807,13 @@
   // ==========================================
   console.log("[Scout] Content script loaded on", window.location.href);
 
-  // Always create dock on LinkedIn
   createDock();
 
-  // Auto-detect recipient on messaging pages
+  // Re-check theme periodically (handles LinkedIn theme toggle without reload)
+  setInterval(applyTheme, 3000);
+
   function checkForRecipient() {
     if (!window.location.pathname.includes("/messaging")) return;
-
     const url = window.location.href;
     const title = document.title;
     if (url === lastCheckedUrl && title === lastCheckedTitle) return;
@@ -869,10 +831,8 @@
     }, 1000);
   }
 
-  // Initial check
   setTimeout(checkForRecipient, 1500);
 
-  // Watch for SPA navigation / DOM changes
   const observer = new MutationObserver(() => {
     if (!document.getElementById("scout-dock-root")) {
       dockRoot = null;
