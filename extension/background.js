@@ -160,31 +160,33 @@ async function claudeStream(name, title, company, searchResults, apiKey, tabId) 
   const titleStr = title ? `, ${title}` : "";
   const companyStr = company ? ` at ${company}` : "";
 
-  const prompt = `You are Scout, an AI assistant helping write personalized LinkedIn cold messages to ${name}${titleStr}${companyStr}.
+  const prompt = `You are Scout — a cold DM research assistant. I'm about to message ${name}${titleStr}${companyStr} on LinkedIn and I need ACTIONABLE intel to write a killer personalized cold DM.
 
-Here is public web information found about them:
+Here is what we found about them online:
 
 ${resultsText}
 
-Write a brief research briefing with these exact section headers (ALL CAPS, each on its own line):
+Give me a fast research brief I can scan in 10 seconds. Use these EXACT section headers (ALL CAPS, each on its own line):
 
-BACKGROUND
-[1-2 sentences: who they are and what they do, beyond their job title]
+WHO THEY ARE
+[1 sentence max. What do they actually DO — not their job title, but what they're known for or working on.]
 
-TALKING POINTS
-\u2022 [Specific, concrete fact from search results \u2014 good conversation starter]
-\u2022 [Another detail about their work, project, or achievement]
-\u2022 [Something recent, notable, or personal to connect on]
+DM HOOKS
+\u2022 [Something specific they did/built/wrote that I can reference in my opening line]
+\u2022 [A recent win, project, or milestone I can congratulate them on]
+\u2022 [A shared interest or angle I could use to build rapport]
+\u2022 [An opinion they expressed publicly that I could reference]
+[Give me 3-5 hooks. Each must be SPECIFIC — name the project, article, company, or event. "They have experience in tech" is useless. "They built the recommendation engine at Spotify" is gold.]
 
-SUGGESTED OPENER
-[A natural, personalized opening message for a cold LinkedIn DM. Reference one specific talking point. Keep it under 3 sentences. Sound genuine, not salesy.]
+COLD DM
+[Write me a ready-to-send cold DM. 2-3 sentences max. Reference ONE specific hook from above. Sound like a real person, not a salesperson. No "I hope this message finds you well" garbage.]
 
 Rules:
-- 3-5 talking points, each specific and under 20 words
-- Focus on: recent work, publications, talks, articles, projects, interests
-- Skip generic info already visible on LinkedIn (job title, company name)
-- If search results are thin, extract whatever is most specific and personal
-- Write in a clean, direct style \u2014 no filler words`;
+- Every hook must name a SPECIFIC thing (project name, article title, event, company, metric)
+- No generic filler like "extensive experience" or "passionate about innovation"
+- No URLs or links — I just need the facts
+- If the search results are thin, be honest and work with what you have
+- Write like a sharp friend briefing me before a networking event`;
 
   console.log("[Scout BG] Claude prompt length:", prompt.length, "chars");
   console.log("[Scout BG] Sending streaming request to OpenRouter...");

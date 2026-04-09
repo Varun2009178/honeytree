@@ -85,7 +85,7 @@
       overflow: hidden;
       border-radius: 24px;
       padding: 10px 14px;
-      box-shadow: 0 6px 6px rgba(0, 0, 0, 0.2), 0 0 20px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08), 0 0 1px rgba(0, 0, 0, 0.12);
       transition: all 0.7s cubic-bezier(0.175, 0.885, 0.32, 2.2);
       cursor: default;
     }
@@ -102,19 +102,19 @@
       z-index: 0;
       overflow: hidden;
       border-radius: inherit;
-      backdrop-filter: blur(16px) saturate(180%);
-      -webkit-backdrop-filter: blur(16px) saturate(180%);
+      backdrop-filter: blur(24px) saturate(200%);
+      -webkit-backdrop-filter: blur(24px) saturate(200%);
       filter: url(#scout-glass-distortion);
       isolation: isolate;
     }
 
-    /* Glass layer 2: tinted overlay */
+    /* Glass layer 2: neutral frosted tint — adapts to any background */
     .dock .glass-layer-tint {
       position: absolute;
       inset: 0;
       z-index: 10;
       border-radius: inherit;
-      background: rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.35);
     }
 
     /* Glass layer 3: inset highlights (depth) */
@@ -125,8 +125,9 @@
       border-radius: inherit;
       overflow: hidden;
       box-shadow:
-        inset 2px 2px 1px 0 rgba(255, 255, 255, 0.25),
-        inset -1px -1px 1px 1px rgba(255, 255, 255, 0.15);
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.5),
+        inset 0 -1px 0 0 rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.45);
     }
 
     /* Dock items row */
@@ -148,7 +149,7 @@
       border: none;
       border-radius: 12px;
       background: transparent;
-      color: rgba(255, 255, 255, 0.7);
+      color: rgba(0, 0, 0, 0.5);
       cursor: pointer;
       transition: all 0.7s cubic-bezier(0.175, 0.885, 0.32, 2.2);
       position: relative;
@@ -156,10 +157,10 @@
     }
 
     .dock-item:hover {
-      color: #ffffff;
+      color: rgba(0, 0, 0, 0.8);
       transform: scale(1.2);
-      background: rgba(255, 255, 255, 0.1);
-      box-shadow: 0 0 16px rgba(129, 140, 248, 0.3);
+      background: rgba(255, 255, 255, 0.25);
+      box-shadow: 0 0 12px rgba(99, 102, 241, 0.2);
     }
 
     .dock-item:active {
@@ -167,8 +168,8 @@
     }
 
     .dock-item.active {
-      color: #a5b4fc;
-      background: rgba(129, 140, 248, 0.12);
+      color: #6366f1;
+      background: rgba(99, 102, 241, 0.1);
     }
 
     /* Pulsing glow when name detected */
@@ -183,7 +184,7 @@
       inset: -3px;
       border-radius: 14px;
       border: 2px solid transparent;
-      border-top-color: #818cf8;
+      border-top-color: #6366f1;
       animation: dockSpin 0.8s linear infinite;
     }
 
@@ -194,7 +195,7 @@
       left: 50%;
       transform: translateX(-50%) scale(0.9);
       padding: 4px 10px;
-      background: rgba(0, 0, 0, 0.85);
+      background: rgba(0, 0, 0, 0.75);
       color: rgba(255, 255, 255, 0.9);
       font-size: 11px;
       font-weight: 500;
@@ -214,13 +215,13 @@
     .dock-separator {
       width: 1px;
       height: 20px;
-      background: rgba(255, 255, 255, 0.12);
+      background: rgba(0, 0, 0, 0.08);
       margin: 0 4px;
     }
 
     @keyframes dockGlow {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(129, 140, 248, 0); }
-      50% { box-shadow: 0 0 12px 4px rgba(129, 140, 248, 0.25); }
+      0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+      50% { box-shadow: 0 0 12px 4px rgba(99, 102, 241, 0.2); }
     }
 
     @keyframes dockSpin {
@@ -251,12 +252,12 @@
       left: calc(50% - 180px);
       width: 360px;
       max-height: calc(100vh - 120px);
-      background: rgba(10, 10, 10, 0.88);
-      backdrop-filter: blur(24px) saturate(150%);
-      -webkit-backdrop-filter: blur(24px) saturate(150%);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.45);
+      backdrop-filter: blur(28px) saturate(200%);
+      -webkit-backdrop-filter: blur(28px) saturate(200%);
+      border: 1px solid rgba(255, 255, 255, 0.55);
       border-radius: 20px;
-      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1), 0 0 1px rgba(0, 0, 0, 0.1);
       overflow: hidden;
       display: flex;
       flex-direction: column;
@@ -276,7 +277,7 @@
       padding: 14px 18px 10px;
       cursor: grab;
       user-select: none;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
       flex-shrink: 0;
     }
 
@@ -288,12 +289,12 @@
       gap: 10px;
     }
 
-    .panel-header-icon { color: #818cf8; display: flex; }
+    .panel-header-icon { color: #6366f1; display: flex; }
 
     .panel-title {
       font-size: 14px;
       font-weight: 600;
-      color: rgba(255, 255, 255, 0.9);
+      color: rgba(0, 0, 0, 0.8);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -309,13 +310,13 @@
       border: none;
       border-radius: 8px;
       background: transparent;
-      color: rgba(255, 255, 255, 0.3);
+      color: rgba(0, 0, 0, 0.3);
       cursor: pointer;
       transition: all 0.15s ease;
     }
     .panel-close:hover {
-      background: rgba(255, 255, 255, 0.08);
-      color: rgba(255, 255, 255, 0.7);
+      background: rgba(0, 0, 0, 0.06);
+      color: rgba(0, 0, 0, 0.6);
     }
 
     /* --- Body --- */
@@ -328,7 +329,7 @@
 
     .panel-body::-webkit-scrollbar { width: 3px; }
     .panel-body::-webkit-scrollbar-track { background: transparent; }
-    .panel-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+    .panel-body::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 2px; }
 
     /* --- Search progress lines --- */
     .search-line {
@@ -337,7 +338,7 @@
       gap: 10px;
       padding: 7px 0;
       font-size: 12.5px;
-      color: rgba(255, 255, 255, 0.55);
+      color: rgba(0, 0, 0, 0.5);
       opacity: 0;
       animation: fadeIn 0.35s ease forwards;
     }
@@ -346,24 +347,24 @@
       width: 6px;
       height: 6px;
       border-radius: 50%;
-      background: #818cf8;
+      background: #6366f1;
       flex-shrink: 0;
     }
     .search-dot.active { animation: dotPulse 1.2s ease-in-out infinite; }
-    .search-dot.done { background: #34d399; }
-    .search-dot.failed { background: rgba(255,255,255,0.15); }
+    .search-dot.done { background: #22c55e; }
+    .search-dot.failed { background: rgba(0,0,0,0.15); }
 
     .search-status {
       margin-left: auto;
       font-size: 10.5px;
-      color: rgba(255, 255, 255, 0.25);
+      color: rgba(0, 0, 0, 0.25);
     }
 
     /* --- Streaming text area --- */
     .stream-content {
       font-size: 13px;
       line-height: 1.75;
-      color: rgba(255, 255, 255, 0.85);
+      color: rgba(0, 0, 0, 0.78);
       white-space: pre-wrap;
       word-wrap: break-word;
       letter-spacing: 0.01em;
@@ -375,10 +376,9 @@
       font-weight: 700;
       letter-spacing: 0.12em;
       text-transform: uppercase;
-      color: #818cf8;
+      color: #6366f1;
       margin-top: 18px;
       margin-bottom: 4px;
-      opacity: 0.9;
     }
 
     .section-label:first-child { margin-top: 0; }
@@ -387,7 +387,7 @@
       display: inline-block;
       width: 2px;
       height: 1.1em;
-      background: #818cf8;
+      background: #6366f1;
       vertical-align: text-bottom;
       margin-left: 2px;
       animation: cursorBlink 1s step-end infinite;
@@ -396,9 +396,9 @@
     /* --- Footer --- */
     .panel-footer {
       padding: 10px 18px;
-      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      border-top: 1px solid rgba(0, 0, 0, 0.06);
       font-size: 10.5px;
-      color: rgba(255, 255, 255, 0.25);
+      color: rgba(0, 0, 0, 0.3);
       flex-shrink: 0;
     }
 
@@ -406,7 +406,7 @@
     .idle-msg {
       text-align: center;
       padding: 36px 16px;
-      color: rgba(255, 255, 255, 0.25);
+      color: rgba(0, 0, 0, 0.3);
       font-size: 12.5px;
       line-height: 1.6;
     }
@@ -414,7 +414,7 @@
     .error-msg {
       text-align: center;
       padding: 24px 16px;
-      color: #f87171;
+      color: #dc2626;
       font-size: 12.5px;
     }
 
@@ -690,10 +690,10 @@
 
   function formatStreamedText(raw) {
     let html = escapeHtml(raw);
-    // Style section headers: BACKGROUND, TALKING POINTS, SUGGESTED OPENER
-    html = html.replace(/^(BACKGROUND)\n/gm, '<span class="section-label">$1</span>');
-    html = html.replace(/^(TALKING POINTS)\n/gm, '<span class="section-label">$1</span>');
-    html = html.replace(/^(SUGGESTED OPENER)\n/gm, '<span class="section-label">$1</span>');
+    // Style section headers
+    html = html.replace(/^(WHO THEY ARE)\n/gm, '<span class="section-label">$1</span>');
+    html = html.replace(/^(DM HOOKS)\n/gm, '<span class="section-label">$1</span>');
+    html = html.replace(/^(COLD DM)\n/gm, '<span class="section-label">$1</span>');
     return html;
   }
 
@@ -704,8 +704,8 @@
     const cursor = panelShadow.querySelector(".stream-cursor");
     if (cursor) cursor.remove();
 
-    // Extract suggested opener for copy button
-    const match = streamedText.match(/SUGGESTED OPENER\n([\s\S]*?)$/);
+    // Extract cold DM for copy button
+    const match = streamedText.match(/COLD DM\n([\s\S]*?)$/);
     if (match) suggestedOpener = match[1].trim();
 
     // Add footer
@@ -713,7 +713,7 @@
     if (body) {
       const footer = document.createElement("div");
       footer.className = "panel-footer";
-      footer.textContent = "Research complete — click Copy in dock to copy opener";
+      footer.textContent = "Done — click Copy in dock to grab the cold DM";
       body.appendChild(footer);
     }
 
@@ -828,9 +828,9 @@
         setDockLoading(false);
         isResearching = false;
         const items = (msg.items || []).map(item =>
-          `<div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
-            <div style="color:rgba(255,255,255,0.85);font-size:12.5px;font-weight:500;">${escapeHtml(item.title)}</div>
-            <div style="color:rgba(255,255,255,0.4);font-size:11.5px;margin-top:2px;">${escapeHtml(item.snippet)}</div>
+          `<div style="padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.05);">
+            <div style="color:rgba(0,0,0,0.78);font-size:12.5px;font-weight:500;">${escapeHtml(item.title)}</div>
+            <div style="color:rgba(0,0,0,0.45);font-size:11.5px;margin-top:2px;">${escapeHtml(item.snippet)}</div>
           </div>`
         ).join("");
         setPanelBody(items || '<div class="idle-msg">No results</div>');
