@@ -192,7 +192,42 @@
       font-weight: 400;
       color: #8e8e93;
       text-align: center;
-      padding: 40px 16px;
+      padding: 20px 0;
+    }
+
+    .scout-manual-input {
+      font-family: 'DM Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-size: 0.875rem;
+      padding: 10px 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      outline: none;
+      color: #222222;
+      background: #ffffff;
+      width: 100%;
+      transition: border-color 0.2s ease;
+    }
+
+    .scout-manual-input:focus {
+      border-color: #3b82f6;
+    }
+
+    .scout-search-btn {
+      font-family: 'DM Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #ffffff;
+      background: #181e25;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 20px;
+      cursor: pointer;
+      width: 100%;
+      transition: background 0.2s ease;
+    }
+
+    .scout-search-btn:hover {
+      background: #2563eb;
     }
 
     .scout-error-msg {
@@ -259,216 +294,48 @@
     }
   `;
 
-  // --- DOM DETECTION ---
+  // --- SIMPLE NAME DETECTION ---
 
   function detectRecipient() {
-    // Strategy 1: find compose textbox, walk up to conversation header
-    const textboxes = document.querySelectorAll(
-      '[role="textbox"][contenteditable="true"]'
-    );
+    // Try to auto-detect who the user is messaging.
+    // Simple strategies — no complex DOM walking.
 
-    let composeBox = null;
-    for (const tb of textboxes) {
-      if (isInMessagingArea(tb)) {
-        composeBox = tb;
-        break;
+    // 1. Page title: LinkedIn messaging titles are often "FirstName LastName | LinkedIn"
+    const title = document.title || "";
+    const titleMatch = title.match(/^(.+?)\s*[\|–—-]\s*(?:LinkedIn|Messaging)/i);
+    if (titleMatch) {
+      const name = titleMatch[1].trim();
+      if (name && name.length > 1 && name.length < 60 && name !== "Messaging") {
+        console.log("[Scout] Detected from page title:", name);
+        return { name, title: "", company: "" };
       }
     }
 
-    // Strategy 2: if no role="textbox", try contenteditable divs/p elements
-    if (!composeBox) {
-      const editables = document.querySelectorAll(
-        '[contenteditable="true"]'
-      );
-      for (const el of editables) {
-        if (isInMessagingArea(el)) {
-          composeBox = el;
-          break;
-        }
-      }
-    }
-
-    if (!composeBox) {
-      console.log("[Scout] No compose box found");
-      return null;
-    }
-
-    console.log("[Scout] Found compose box:", composeBox.tagName, composeBox.className);
-
-    const conversationContainer = findConversationContainer(composeBox);
-    if (!conversationContainer) {
-      console.log("[Scout] No conversation container found");
-      // Fallback: search the whole page for a name
-      return detectRecipientFallback();
-    }
-
-    console.log("[Scout] Found container:", conversationContainer.tagName);
-
-    const nameEl = findNameElement(conversationContainer);
-    if (!nameEl) {
-      console.log("[Scout] No name element found in container");
-      return detectRecipientFallback();
-    }
-
-    const name = nameEl.textContent.trim();
-    if (!name) return null;
-
-    console.log("[Scout] Detected recipient:", name);
-
-    const titleCompany = findTitleCompany(conversationContainer, nameEl);
-
-    return {
-      name,
-      title: titleCompany.title,
-      company: titleCompany.company,
-    };
-  }
-
-  function detectRecipientFallback() {
-    // Fallback: look for conversation header patterns anywhere on the page
-    // LinkedIn messaging typically has the person's name in an h2 within
-    // a thread/conversation pane
-
-    // Try: any h2 inside an element that also contains a compose area
-    const allH2s = document.querySelectorAll("h2");
-    for (const h2 of allH2s) {
+    // 2. Any h2 on the page (LinkedIn uses h2 for conversation partner names)
+    const h2s = document.querySelectorAll("h2");
+    for (const h2 of h2s) {
       const text = h2.textContent.trim();
-      if (text && text.length > 1 && text.length < 60) {
-        // Check if this h2 is near the messaging area (same parent tree)
-        const parent = h2.closest('[class*="thread"], [class*="conversation"], [class*="msg"], [data-control-name]');
-        if (parent || window.location.pathname.includes("/messaging")) {
-          console.log("[Scout] Fallback detected name from h2:", text);
-          return { name: text, title: "", company: "" };
-        }
+      if (text && text.length > 2 && text.length < 60) {
+        console.log("[Scout] Detected from h2:", text);
+        return { name: text, title: "", company: "" };
       }
     }
 
-    // Try: profile links with /in/ in the messaging area
+    // 3. Profile links (/in/) — the person's name is often a link to their profile
     const profileLinks = document.querySelectorAll('a[href*="/in/"]');
     for (const link of profileLinks) {
       const text = link.textContent.trim();
-      // Look for links that seem like a person name (not navigation links)
-      if (text && text.length > 3 && text.length < 60 && !text.includes("LinkedIn")) {
+      if (text && text.length > 2 && text.length < 60 && !text.toLowerCase().includes("linkedin")) {
         const rect = link.getBoundingClientRect();
-        // Only consider visible, prominently placed links (top half of page)
-        if (rect.top > 0 && rect.top < window.innerHeight / 2 && rect.width > 50) {
-          console.log("[Scout] Fallback detected name from profile link:", text);
+        if (rect.top > 0 && rect.top < window.innerHeight * 0.6 && rect.width > 30) {
+          console.log("[Scout] Detected from profile link:", text);
           return { name: text, title: "", company: "" };
         }
       }
     }
 
-    console.log("[Scout] Fallback detection also failed");
+    console.log("[Scout] Auto-detection failed — user can type name manually");
     return null;
-  }
-
-  function isInMessagingArea(element) {
-    // Walk up ancestors looking for messaging-related containers
-    let current = element;
-    let depth = 0;
-    while (current && depth < 20) {
-      const classes = typeof current.className === "string" ? current.className : "";
-      const id = current.id || "";
-      if (
-        classes.includes("messaging") ||
-        id.includes("messaging") ||
-        current.tagName === "MAIN"
-      ) {
-        return true;
-      }
-      current = current.parentElement;
-      depth++;
-    }
-    // Also check the URL as a signal
-    return window.location.pathname.includes("/messaging");
-  }
-
-  function findConversationContainer(composeBox) {
-    // Walk up from compose box to find the conversation thread container
-    // Look for a container that has both the header and the compose area
-    let current = composeBox;
-    let depth = 0;
-    while (current && depth < 15) {
-      // Look for heading elements inside this container
-      const headings = current.querySelectorAll("h2, h3");
-      if (headings.length > 0) {
-        return current;
-      }
-      current = current.parentElement;
-      depth++;
-    }
-    return null;
-  }
-
-  function findNameElement(container) {
-    // Priority 1: h2 elements (LinkedIn typically uses h2 for conversation name)
-    const h2s = container.querySelectorAll("h2");
-    for (const h2 of h2s) {
-      const text = h2.textContent.trim();
-      // Filter out empty or clearly non-name headings
-      if (text && text.length > 1 && text.length < 80) {
-        return h2;
-      }
-    }
-
-    // Priority 2: prominent links near the top of the container
-    // LinkedIn often wraps the name in a link to their profile
-    const links = container.querySelectorAll('a[href*="/in/"]');
-    for (const link of links) {
-      const text = link.textContent.trim();
-      if (text && text.length > 1 && text.length < 80) {
-        return link;
-      }
-    }
-
-    // Priority 3: h3 elements
-    const h3s = container.querySelectorAll("h3");
-    for (const h3 of h3s) {
-      const text = h3.textContent.trim();
-      if (text && text.length > 1 && text.length < 80) {
-        return h3;
-      }
-    }
-
-    return null;
-  }
-
-  function findTitleCompany(container, nameEl) {
-    // Look for a subtitle element near the name — usually a sibling or nearby <p> or <span>
-    let result = { title: "", company: "" };
-
-    // Check next sibling elements of the name's parent
-    let parent = nameEl.parentElement;
-    if (!parent) return result;
-
-    const siblings = parent.parentElement
-      ? parent.parentElement.children
-      : parent.children;
-    let foundName = false;
-
-    for (const sibling of siblings) {
-      if (sibling === parent || sibling === nameEl) {
-        foundName = true;
-        continue;
-      }
-      if (foundName) {
-        const text = sibling.textContent.trim();
-        if (text && text.length > 2 && text.length < 120) {
-          // Try to parse "Title at Company" pattern
-          const atMatch = text.match(/^(.+?)\s+at\s+(.+)$/i);
-          if (atMatch) {
-            result.title = atMatch[1].trim();
-            result.company = atMatch[2].trim();
-          } else {
-            // Use the whole thing as title
-            result.title = text;
-          }
-          break;
-        }
-      }
-    }
-
-    return result;
   }
 
   // --- MUTATION OBSERVER ---
@@ -479,9 +346,7 @@
       const recipient = detectRecipient();
 
       if (!recipient) {
-        if (sidebarRoot) {
-          updateSidebar("idle", {});
-        }
+        // Don't clear sidebar — keep showing idle/manual input state
         return;
       }
 
@@ -490,19 +355,19 @@
       }
 
       lastResearchedName = recipient.name;
-      startResearch(recipient);
-    }, 200);
+      startResearch(recipient.name);
+    }, 500);
   }
 
-  function startResearch(recipient) {
+  function startResearch(name) {
     ensureSidebar();
-    updateSidebar("loading", { name: recipient.name });
+    updateSidebar("loading", { name });
 
     chrome.runtime.sendMessage({
       action: "research",
-      name: recipient.name,
-      title: recipient.title,
-      company: recipient.company,
+      name: name,
+      title: "",
+      company: "",
     });
   }
 
@@ -572,10 +437,10 @@
 
     const sidebar = document.createElement("div");
     sidebar.className = "scout-sidebar";
-    sidebar.innerHTML = `
-      <div class="scout-idle-msg">Open a DM to activate Scout</div>
-    `;
+    sidebar.innerHTML = getIdleHtml();
     shadowRoot.appendChild(sidebar);
+
+    attachManualSearchHandler();
 
     const toggle = document.createElement("button");
     toggle.className = "scout-toggle";
@@ -591,6 +456,35 @@
     });
   }
 
+  function getIdleHtml() {
+    return `
+      <div class="scout-header-name">Scout</div>
+      <hr class="scout-divider">
+      <div class="scout-idle-msg">Research anyone — type a name or Scout will auto-detect from the page.</div>
+      <input type="text" class="scout-manual-input" id="scout-name-input" placeholder="Type a name to research...">
+      <button class="scout-search-btn" id="scout-search-btn">Research</button>
+    `;
+  }
+
+  function attachManualSearchHandler() {
+    if (!shadowRoot) return;
+    const btn = shadowRoot.getElementById("scout-search-btn");
+    const input = shadowRoot.getElementById("scout-name-input");
+    if (!btn || !input) return;
+
+    const doSearch = () => {
+      const name = input.value.trim();
+      if (!name) return;
+      lastResearchedName = name;
+      startResearch(name);
+    };
+
+    btn.addEventListener("click", doSearch);
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") doSearch();
+    });
+  }
+
   function updateSidebar(state, data) {
     if (!shadowRoot) return;
     const sidebar = shadowRoot.querySelector(".scout-sidebar");
@@ -598,9 +492,8 @@
 
     switch (state) {
       case "idle":
-        sidebar.innerHTML = `
-          <div class="scout-idle-msg">Open a DM to activate Scout</div>
-        `;
+        sidebar.innerHTML = getIdleHtml();
+        attachManualSearchHandler();
         break;
 
       case "loading":
@@ -696,6 +589,9 @@
           <hr class="scout-divider">
           <div class="scout-sources">Sources: ${p.source_count || 0}</div>
           <button class="scout-refresh-btn" id="scout-refresh">Refresh</button>
+          <hr class="scout-divider">
+          <input type="text" class="scout-manual-input" id="scout-name-input" placeholder="Research someone else...">
+          <button class="scout-search-btn" id="scout-search-btn">Research</button>
         `;
 
         // Attach refresh handler
@@ -703,9 +599,10 @@
         if (refreshBtn) {
           refreshBtn.addEventListener("click", () => {
             lastResearchedName = "";
-            onDomChange();
+            startResearch(currentName);
           });
         }
+        attachManualSearchHandler();
         break;
       }
 
