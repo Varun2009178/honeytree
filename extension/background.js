@@ -162,38 +162,52 @@ async function claudeStructure(name, title, company, searchResults, apiKey) {
       messages: [
         {
           role: "user",
-          content: `Here is public web information about ${name}${titleStr}${companyStr}.
+          content: `You are helping someone write a personalized cold message on LinkedIn to ${name}${titleStr}${companyStr}.
+
+Here is public web information found about them:
 
 ${resultsText}
 
-Create a structured profile. Return JSON only, no markdown fencing:
+Extract the most useful information for writing a personalized cold message. Return ONLY valid JSON with no markdown fencing:
+
 {
-  "summary": "2-3 sentence bio based on what was found",
-  "notable_work": ["item 1", "item 2"],
-  "recent_activity": ["item 1", "item 2"],
-  "source_count": number
+  "talking_points": [
+    "Specific thing about their work you could reference",
+    "Recent achievement or project to mention",
+    "Interest or background to connect on"
+  ],
+  "background": "One sentence: who they are and what they do",
+  "source_count": ${searchResults.length}
 }
 
 Rules:
-- Only include facts found in the search results. Do not fabricate.
-- If little was found, say so honestly in the summary.
-- Keep each list item under 15 words.
-- Maximum 5 items per list.`,
+- talking_points: 3-5 specific, concrete facts from the search results that would make good conversation starters
+- Each talking point should be under 20 words
+- Focus on: recent work, publications, talks, articles, projects, interests
+- Skip generic info like job titles (that's already visible on LinkedIn)
+- If search results are thin, extract whatever is most specific/personal
+- Return ONLY the JSON object, no other text`,
         },
       ],
     }),
   });
 
   if (!response.ok) {
-    throw new Error(`OpenRouter error: ${response.status}`);
+    const errorText = await response.text();
+    console.error("[Scout] OpenRouter error:", response.status, errorText);
+    throw new Error(`OpenRouter error: ${response.status} - ${errorText}`);
   }
 
   const result = await response.json();
+  console.log("[Scout] OpenRouter response:", result);
+
   const text = result.choices[0].message.content;
+  console.log("[Scout] Claude output:", text);
 
   // Parse JSON from response — handle possible markdown fencing
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
+    console.error("[Scout] Could not find JSON in response:", text);
     throw new Error("Could not parse response as JSON");
   }
 

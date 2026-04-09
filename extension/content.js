@@ -559,35 +559,23 @@
 
       case "profile": {
         const p = data.profile;
-        const titleLine2 = currentTitle && currentCompany
-          ? `${currentTitle} at ${currentCompany}`
-          : currentTitle || currentCompany || "";
 
-        let notableHtml = "";
-        if (p.notable_work && p.notable_work.length > 0) {
-          notableHtml = `
-            <div class="scout-section-heading">Notable Work</div>
-            ${p.notable_work.map((item) => `<div class="scout-section-item">${escapeHtml(item)}</div>`).join("")}
-          `;
-        }
-
-        let recentHtml = "";
-        if (p.recent_activity && p.recent_activity.length > 0) {
-          recentHtml = `
-            <div class="scout-section-heading">Recent Activity</div>
-            ${p.recent_activity.map((item) => `<div class="scout-section-item">${escapeHtml(item)}</div>`).join("")}
+        // Display talking points as clean bullets
+        let talkingPointsHtml = "";
+        if (p.talking_points && p.talking_points.length > 0) {
+          talkingPointsHtml = `
+            <div class="scout-section-heading">Talking Points</div>
+            ${p.talking_points.map((item) => `<div class="scout-section-item">${escapeHtml(item)}</div>`).join("")}
           `;
         }
 
         sidebar.innerHTML = `
           <div class="scout-header-name">${escapeHtml(currentName)}</div>
-          ${titleLine2 ? `<div class="scout-header-title">${escapeHtml(titleLine2)}</div>` : ""}
           <hr class="scout-divider">
-          <div class="scout-summary">${escapeHtml(p.summary || "")}</div>
-          ${notableHtml}
-          ${recentHtml}
+          ${p.background ? `<div class="scout-summary">${escapeHtml(p.background)}</div>` : ""}
+          ${talkingPointsHtml}
           <hr class="scout-divider">
-          <div class="scout-sources">Sources: ${p.source_count || 0}</div>
+          <div class="scout-sources">Based on ${p.source_count || 0} sources</div>
           <button class="scout-refresh-btn" id="scout-refresh">Refresh</button>
           <hr class="scout-divider">
           <input type="text" class="scout-manual-input" id="scout-name-input" placeholder="Research someone else...">
