@@ -1,26 +1,26 @@
 const tavilyKeyInput = document.getElementById("tavily-key");
-const anthropicKeyInput = document.getElementById("anthropic-key");
+const openrouterKeyInput = document.getElementById("openrouter-key");
 const enabledToggle = document.getElementById("scout-enabled");
 const saveBtn = document.getElementById("save-btn");
 const statusMsg = document.getElementById("status-msg");
 
 // Load saved settings on popup open
 chrome.storage.local.get(
-  ["tavilyApiKey", "anthropicApiKey", "scoutEnabled"],
+  ["tavilyApiKey", "openrouterApiKey", "scoutEnabled"],
   (data) => {
     if (data.tavilyApiKey) tavilyKeyInput.value = data.tavilyApiKey;
-    if (data.anthropicApiKey) anthropicKeyInput.value = data.anthropicApiKey;
+    if (data.openrouterApiKey) openrouterKeyInput.value = data.openrouterApiKey;
     enabledToggle.checked = data.scoutEnabled !== false; // default true
   }
 );
 
 saveBtn.addEventListener("click", () => {
   const tavilyApiKey = tavilyKeyInput.value.trim();
-  const anthropicApiKey = anthropicKeyInput.value.trim();
+  const openrouterApiKey = openrouterKeyInput.value.trim();
   const scoutEnabled = enabledToggle.checked;
 
   chrome.storage.local.set(
-    { tavilyApiKey, anthropicApiKey, scoutEnabled },
+    { tavilyApiKey, openrouterApiKey, scoutEnabled },
     () => {
       statusMsg.textContent = "Saved";
       setTimeout(() => {

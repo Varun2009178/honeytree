@@ -1,5 +1,5 @@
 // Scout background service worker
-// Handles Tavily search + Claude structuring
+// Handles Tavily search + OpenRouter (Claude) structuring
 // Content script sends { action, name, title, company }
 // Background sends back partial search results and final structured profile
 
@@ -15,13 +15,13 @@ async function handleResearch({ name, title, company }, tabId) {
   // Load API keys
   const data = await chrome.storage.local.get([
     "tavilyApiKey",
-    "anthropicApiKey",
+    "openrouterApiKey",
     "scoutEnabled",
   ]);
 
   if (data.scoutEnabled === false) return;
 
-  if (!data.tavilyApiKey || !data.anthropicApiKey) {
+  if (!data.tavilyApiKey || !data.openrouterApiKey) {
     chrome.tabs.sendMessage(tabId, {
       action: "error",
       message: "Set your API keys in Scout settings",
@@ -97,7 +97,7 @@ async function handleResearch({ name, title, company }, tabId) {
       title,
       company,
       flatResults,
-      data.anthropicApiKey
+      data.openrouterApiKey
     );
     chrome.tabs.sendMessage(tabId, {
       action: "profile-ready",
@@ -148,16 +148,16 @@ async function claudeStructure(name, title, company, searchResults, apiKey) {
   const titleStr = title ? `, ${title}` : "";
   const companyStr = company ? ` at ${company}` : "";
 
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
+  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      "anthropic-dangerous-direct-browser-access": "true",
+      "Authorization": `Bearer ${apiKey}`,
+      "HTTP-Referer": "chrome-extension://scout",
+      "X-Title": "Scout",
     },
     body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
+      model: "anthropic/claude-sonnet-4-20250514",
       max_tokens: 1024,
       messages: [
         {
@@ -185,16 +185,16 @@ Rules:
   });
 
   if (!response.ok) {
-    throw new Error(`Claude error: ${response.status}`);
+    throw new Error(`OpenRouter error: ${response.status}`);
   }
 
   const result = await response.json();
-  const text = result.content[0].text;
+  const text = result.choices[0].message.content;
 
   // Parse JSON from response — handle possible markdown fencing
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
-    throw new Error("Could not parse Claude response as JSON");
+    throw new Error("Could not parse response as JSON");
   }
 
   return JSON.parse(jsonMatch[0]);
