@@ -1,0 +1,101 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Outfit:wght@500;600&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'DM Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  background: #ffffff;
+  color: #222222;
+  width: 300px;
+  padding: 24px;
+}
+
+.popup-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.popup-title {
+  font-family: 'Outfit', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #222222;
+  line-height: 1.10;
+}
+
+.popup-subtitle {
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: #45515e;
+  margin-top: -8px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #222222;
+}
+
+.field input[type="password"] {
+  font-family: 'DM Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 0.875rem;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  outline: none;
+  color: #222222;
+  background: #ffffff;
+  transition: border-color 0.2s ease;
+}
+
+.field input[type="password"]:focus {
+  border-color: #3b82f6;
+}
+
+.toggle-field {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.toggle-field input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #3b82f6;
+}
+
+#save-btn {
+  font-family: 'DM Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #ffffff;
+  background: #181e25;
+  border: none;
+  border-radius: 8px;
+  padding: 11px 20px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+#save-btn:hover {
+  background: #2563eb;
+}
+
+.status-msg {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #3b82f6;
+  min-height: 1rem;
+  text-align: center;
+}
