@@ -507,6 +507,35 @@
         attachManualSearchHandler();
         break;
 
+      case "ready-to-analyze": {
+        const detectedName = data.name || "";
+        sidebar.innerHTML = `
+          <div class="scout-header-name">Scout</div>
+          <hr class="scout-divider">
+          ${detectedName ? `<div class="scout-idle-msg">Ready to analyze <strong>${escapeHtml(detectedName)}</strong></div>` : `<div class="scout-idle-msg">Enter a name to analyze</div>`}
+          <input type="text" class="scout-manual-input" id="scout-name-input" placeholder="Type a name to research..." value="${escapeHtml(detectedName)}">
+          <button class="scout-search-btn" id="scout-analyze-btn">Start Analysis</button>
+        `;
+
+        // Attach handler for Start Analysis button
+        const analyzeBtn = shadowRoot.getElementById("scout-analyze-btn");
+        const input = shadowRoot.getElementById("scout-name-input");
+        if (analyzeBtn && input) {
+          const doAnalysis = () => {
+            const name = input.value.trim();
+            if (!name) return;
+            lastResearchedName = name;
+            startResearch(name);
+          };
+
+          analyzeBtn.addEventListener("click", doAnalysis);
+          input.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") doAnalysis();
+          });
+        }
+        break;
+      }
+
       case "loading":
         currentName = data.name || "";
         sidebar.innerHTML = `
@@ -704,18 +733,14 @@
     btn.addEventListener("click", () => {
       // Try to auto-detect the person's name
       const recipient = detectRecipient();
+      ensureSidebar();
 
-      if (recipient) {
-        // Found someone — research them
-        lastResearchedName = recipient.name;
-        ensureSidebar();
-        startResearch(recipient.name);
-      } else {
-        // Couldn't find name — show sidebar with manual input
-        ensureSidebar();
-        const sidebar = shadowRoot.querySelector(".scout-sidebar");
-        if (sidebar) sidebar.classList.add("visible");
-      }
+      // Show the sidebar
+      const sidebar = shadowRoot.querySelector(".scout-sidebar");
+      if (sidebar) sidebar.classList.add("visible");
+
+      // Show "ready to analyze" state with the detected name (or manual input if not detected)
+      updateSidebar("ready-to-analyze", { name: recipient?.name || "" });
     });
 
     document.body.appendChild(btn);
