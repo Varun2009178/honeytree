@@ -668,16 +668,74 @@
     return div.innerHTML;
   }
 
+  // --- FLOATING SCOUT BUTTON ---
+
+  function createScoutButton() {
+    const btn = document.createElement("button");
+    btn.id = "scout-trigger-btn";
+    btn.textContent = "Scout";
+    btn.style.cssText = `
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 2147483646;
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 9999px;
+      padding: 12px 24px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: rgba(44, 30, 116, 0.16) 0px 4px 12px;
+      transition: all 0.2s ease;
+    `;
+
+    btn.addEventListener("mouseenter", () => {
+      btn.style.background = "#2563eb";
+      btn.style.transform = "scale(1.05)";
+    });
+
+    btn.addEventListener("mouseleave", () => {
+      btn.style.background = "#3b82f6";
+      btn.style.transform = "scale(1)";
+    });
+
+    btn.addEventListener("click", () => {
+      // Try to auto-detect the person's name
+      const recipient = detectRecipient();
+
+      if (recipient) {
+        // Found someone — research them
+        lastResearchedName = recipient.name;
+        ensureSidebar();
+        startResearch(recipient.name);
+      } else {
+        // Couldn't find name — show sidebar with manual input
+        ensureSidebar();
+        const sidebar = shadowRoot.querySelector(".scout-sidebar");
+        if (sidebar) sidebar.classList.add("visible");
+      }
+    });
+
+    document.body.appendChild(btn);
+  }
+
   // --- INIT ---
 
   console.log("[Scout] Content script loaded on", window.location.href);
 
-  // Show sidebar immediately so user knows Scout is active
-  ensureSidebar();
+  // Only show the Scout button on messaging pages
+  if (window.location.pathname.includes("/messaging")) {
+    createScoutButton();
+  }
 
-  const observer = new MutationObserver(onDomChange);
-  observer.observe(document.body, { childList: true, subtree: true });
-
-  // Run detection once on load
-  onDomChange();
+  // Watch for navigation to messaging (LinkedIn is a SPA)
+  const urlObserver = new MutationObserver(() => {
+    if (window.location.pathname.includes("/messaging") && !document.getElementById("scout-trigger-btn")) {
+      createScoutButton();
+    }
+  });
+  urlObserver.observe(document.body, { childList: true, subtree: true });
 })();
