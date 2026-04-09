@@ -28,16 +28,16 @@
       pointer-events: auto;
       width: 100%;
       height: 100%;
-      background: #ffffff;
-      border-left: 1px solid #e5e7eb;
-      box-shadow: rgba(44, 30, 116, 0.16) 0px 0px 15px;
+      background: linear-gradient(to bottom, #f8f9fb 0%, #ffffff 100%);
+      border-left: none;
+      box-shadow: rgba(0, 0, 0, 0.08) -4px 0px 24px;
       overflow-y: auto;
-      padding: 24px;
+      padding: 32px 20px;
       transform: translateX(100%);
       transition: transform 0.3s ease-out;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 20px;
     }
 
     .scout-sidebar.visible {
@@ -93,9 +93,10 @@
 
     .scout-divider {
       height: 1px;
-      background: #f2f3f5;
+      background: #e5e7eb;
       border: none;
-      margin: 4px 0;
+      margin: 16px 0;
+      opacity: 0.5;
     }
 
     .scout-search-line {
@@ -139,28 +140,38 @@
     }
 
     .scout-section-heading {
-      font-family: 'Outfit', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-      font-size: 1rem;
+      font-family: 'DM Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-size: 0.75rem;
       font-weight: 600;
-      color: #222222;
-      margin-top: 8px;
+      color: #9ca3af;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 16px;
+      margin-bottom: 8px;
     }
 
     .scout-section-item {
       font-size: 0.875rem;
       font-weight: 400;
-      color: #222222;
-      line-height: 1.50;
-      padding-left: 12px;
+      color: #374151;
+      line-height: 1.60;
+      padding: 12px 16px;
+      background: #ffffff;
+      border-radius: 12px;
+      margin: 8px 0;
+      box-shadow: rgba(0, 0, 0, 0.04) 0px 2px 8px;
       border-left: 3px solid #3b82f6;
-      margin: 4px 0;
     }
 
     .scout-summary {
       font-size: 0.875rem;
       font-weight: 400;
-      color: #222222;
-      line-height: 1.50;
+      color: #6b7280;
+      line-height: 1.60;
+      padding: 14px 16px;
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: rgba(0, 0, 0, 0.04) 0px 2px 8px;
     }
 
     .scout-sources {
