@@ -1,20 +1,20 @@
-"use client";
+"use client"
 
-import React from "react";
+import React from "react"
 
 // Types
 interface GlassEffectProps {
-  children: React.ReactNode;
-  className?: string;
-  style?: React.CSSProperties;
-  href?: string;
-  target?: string;
+  children: React.ReactNode
+  className?: string
+  style?: React.CSSProperties
+  href?: string
+  target?: string
 }
 
 interface DockIcon {
-  src: string;
-  alt: string;
-  onClick?: () => void;
+  src: string
+  alt: string
+  onClick?: () => void
 }
 
 // Glass Effect Wrapper Component
@@ -29,16 +29,16 @@ export const GlassEffect: React.FC<GlassEffectProps> = ({
     boxShadow: "0 6px 6px rgba(0, 0, 0, 0.2), 0 0 20px rgba(0, 0, 0, 0.1)",
     transitionTimingFunction: "cubic-bezier(0.175, 0.885, 0.32, 2.2)",
     ...style,
-  };
+  }
 
   const content = (
     <div
-      className={`relative flex font-semibold overflow-hidden text-black cursor-pointer transition-all duration-700 ${className}`}
+      className={`relative flex cursor-pointer overflow-hidden font-semibold text-black transition-all duration-700 ${className}`}
       style={glassStyle}
     >
       {/* Glass Layers */}
       <div
-        className="absolute inset-0 z-0 overflow-hidden rounded-inherit rounded-3xl"
+        className="rounded-inherit absolute inset-0 z-0 overflow-hidden rounded-3xl"
         style={{
           backdropFilter: "blur(3px)",
           filter: "url(#glass-distortion)",
@@ -46,11 +46,11 @@ export const GlassEffect: React.FC<GlassEffectProps> = ({
         }}
       />
       <div
-        className="absolute inset-0 z-10 rounded-inherit"
+        className="rounded-inherit absolute inset-0 z-10"
         style={{ background: "rgba(255, 255, 255, 0.25)" }}
       />
       <div
-        className="absolute inset-0 z-20 rounded-inherit rounded-3xl overflow-hidden"
+        className="rounded-inherit absolute inset-0 z-20 overflow-hidden rounded-3xl"
         style={{
           boxShadow:
             "inset 2px 2px 1px 0 rgba(255, 255, 255, 0.5), inset -1px -1px 1px 1px rgba(255, 255, 255, 0.5)",
@@ -60,7 +60,7 @@ export const GlassEffect: React.FC<GlassEffectProps> = ({
       {/* Content */}
       <div className="relative z-30">{children}</div>
     </div>
-  );
+  )
 
   return href ? (
     <a href={href} target={target} rel="noopener noreferrer" className="block">
@@ -68,8 +68,8 @@ export const GlassEffect: React.FC<GlassEffectProps> = ({
     </a>
   ) : (
     content
-  );
-};
+  )
+}
 
 // Dock Component
 const GlassDock: React.FC<{ icons: DockIcon[]; href?: string }> = ({
@@ -78,15 +78,15 @@ const GlassDock: React.FC<{ icons: DockIcon[]; href?: string }> = ({
 }) => (
   <GlassEffect
     href={href}
-    className="rounded-3xl p-3 hover:p-4 hover:rounded-4xl"
+    className="rounded-3xl p-3 hover:rounded-4xl hover:p-4"
   >
-    <div className="flex items-center justify-center gap-2 rounded-3xl p-3 py-0 px-0.5 overflow-hidden">
+    <div className="flex items-center justify-center gap-2 overflow-hidden rounded-3xl p-3 px-0.5 py-0">
       {icons.map((icon, index) => (
         <img
           key={index}
           src={icon.src}
           alt={icon.alt}
-          className="w-16 h-16 transition-all duration-700 hover:scale-110 cursor-pointer"
+          className="h-16 w-16 cursor-pointer transition-all duration-700 hover:scale-110"
           style={{
             transformOrigin: "center center",
             transitionTimingFunction: "cubic-bezier(0.175, 0.885, 0.32, 2.2)",
@@ -96,7 +96,7 @@ const GlassDock: React.FC<{ icons: DockIcon[]; href?: string }> = ({
       ))}
     </div>
   </GlassEffect>
-);
+)
 
 // Button Component
 const GlassButton: React.FC<{ children: React.ReactNode; href?: string }> = ({
@@ -105,7 +105,7 @@ const GlassButton: React.FC<{ children: React.ReactNode; href?: string }> = ({
 }) => (
   <GlassEffect
     href={href}
-    className="rounded-3xl px-10 py-6 hover:px-11 hover:py-7 hover:rounded-4xl overflow-hidden"
+    className="overflow-hidden rounded-3xl px-10 py-6 hover:rounded-4xl hover:px-11 hover:py-7"
   >
     <div
       className="transition-all duration-700 hover:scale-95"
@@ -116,7 +116,7 @@ const GlassButton: React.FC<{ children: React.ReactNode; href?: string }> = ({
       {children}
     </div>
   </GlassEffect>
-);
+)
 
 // SVG Filter Component
 export const GlassFilter: React.FC = () => (
@@ -170,7 +170,7 @@ export const GlassFilter: React.FC = () => (
       />
     </filter>
   </svg>
-);
+)
 // Main Component
 export const Component = () => {
   const dockIcons: DockIcon[] = [
@@ -198,11 +198,11 @@ export const Component = () => {
       src: "https://parsefiles.back4app.com/JPaQcFfEEQ1ePBxbf6wvzkPMEqKYHhPYv8boI1Rc/b7f24edc7183f63dbe34c1943bef2967_low_res_Steam___Liquid_Glass__Default_.png",
       alt: "Steam",
     },
-  ];
+  ]
 
   return (
     <div
-      className="min-h-screen h-full flex items-center justify-center font-light relative overflow-hidden w-full"
+      className="relative flex h-full min-h-screen w-full items-center justify-center overflow-hidden font-light"
       style={{
         background: `url("https://images.unsplash.com/photo-1432251407527-504a6b4174a2?q=80&w=1480&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D") center center`,
         animation: "moveBackground 60s linear infinite",
@@ -210,7 +210,7 @@ export const Component = () => {
     >
       <GlassFilter />
 
-      <div className="flex flex-col gap-6 items-center justify-center w-full">
+      <div className="flex w-full flex-col items-center justify-center gap-6">
         <GlassDock icons={dockIcons} href="https://x.com/notsurajgaud" />
 
         <GlassButton href="https://x.com/notsurajgaud">
@@ -218,8 +218,7 @@ export const Component = () => {
             <p>How can i help you today?</p>
           </div>
         </GlassButton>
-      </div>     
+      </div>
     </div>
-  );
+  )
 }
-

@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server"
+import { getPostHogClient } from "@/lib/posthog-server"
 
 const NOTIFY_EMAIL = process.env.WAITLIST_NOTIFY_EMAIL!
 const RESEND_API_KEY = process.env.RESEND_API_KEY!
 
 export async function POST(request: Request) {
+  const distinctId = request.headers.get("X-POSTHOG-DISTINCT-ID") ?? undefined
+  const sessionId = request.headers.get("X-POSTHOG-SESSION-ID") ?? undefined
+
   try {
     const { email } = await request.json()
 
@@ -14,6 +18,16 @@ export async function POST(request: Request) {
     if (!RESEND_API_KEY) {
       // Fallback: log to server console if Resend isn't configured yet
       console.log(`[Waitlist signup] ${email} at ${new Date().toISOString()}`)
+      const posthog = getPostHogClient()
+      posthog.capture({
+        distinctId: distinctId ?? email,
+        event: "waitlist_signup_completed",
+        properties: {
+          email,
+          resend_configured: false,
+          ...(sessionId ? { $session_id: sessionId } : {}),
+        },
+      })
       return NextResponse.json({ ok: true })
     }
 
@@ -29,6 +43,17 @@ export async function POST(request: Request) {
         subject: `New waitlist signup: ${email}`,
         text: `New Honeydew waitlist signup:\n\nEmail: ${email}\nTime: ${new Date().toISOString()}`,
       }),
+    })
+
+    const posthog = getPostHogClient()
+    posthog.capture({
+      distinctId: distinctId ?? email,
+      event: "waitlist_signup_completed",
+      properties: {
+        email,
+        resend_configured: true,
+        ...(sessionId ? { $session_id: sessionId } : {}),
+      },
     })
 
     return NextResponse.json({ ok: true })
