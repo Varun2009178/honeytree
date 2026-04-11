@@ -1,0 +1,121 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: var(--font-dm-sans);
+  --font-display: var(--font-outfit);
+  --font-script: var(--font-caveat);
+}
+
+html, body {
+  scroll-behavior: smooth;
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-dm-sans), system-ui, sans-serif;
+  color: #1a1a1a;
+  background: #ffffff;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Bouncy easing */
+.bouncy {
+  transition-timing-function: cubic-bezier(0.175, 0.885, 0.32, 2.2);
+}
+
+/* Glass navbar */
+.glass-navbar {
+  backdrop-filter: blur(20px) saturate(1.8);
+  -webkit-backdrop-filter: blur(20px) saturate(1.8);
+  background: rgba(255, 255, 255, 0.6);
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+/* Video frame */
+.video-glass-frame {
+  background: linear-gradient(135deg, rgba(255,255,255,0.4), rgba(255,255,255,0.1));
+  border: 1px solid rgba(245, 158, 11, 0.15);
+  box-shadow:
+    0 30px 80px rgba(245, 158, 11, 0.10),
+    0 10px 30px rgba(0, 0, 0, 0.04);
+}
+
+/* Honey gradient for "sweeter" */
+.honey-gradient {
+  background: linear-gradient(135deg, #f59e0b, #d97706, #b45309);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Cursor blink for typing demo */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* Keyframes */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.8s ease-out both;
+}
+.animate-fade-in-up-delay-1 {
+  animation: fadeInUp 0.8s ease-out 0.15s both;
+}
+.animate-fade-in-up-delay-2 {
+  animation: fadeInUp 0.8s ease-out 0.3s both;
+}
+.animate-fade-in-up-delay-3 {
+  animation: fadeInUp 0.8s ease-out 0.45s both;
+}
+
+/* Honey blobs — slow organic drift */
+@keyframes blobDrift {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(12px, -8px) scale(1.04);
+  }
+  66% {
+    transform: translate(-8px, 6px) scale(0.97);
+  }
+}
+
+.honey-blob {
+  animation: blobDrift 12s ease-in-out infinite;
+}
+
+.honey-blob:nth-child(2) {
+  animation-delay: -3s;
+  animation-duration: 15s;
+}
+
+.honey-blob:nth-child(3) {
+  animation-delay: -6s;
+  animation-duration: 18s;
+}
+
+.honey-blob:nth-child(4) {
+  animation-delay: -2s;
+  animation-duration: 14s;
+}
+
+.honey-blob:nth-child(5) {
+  animation-delay: -8s;
+  animation-duration: 16s;
+}
