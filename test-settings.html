@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test Scout Settings</title>
+</head>
+<body>
+  <h1>Scout Settings Tester</h1>
+  <p>Open DevTools Console (F12) and click the button below:</p>
+  <button onclick="testSettings()">Check Saved Settings</button>
+  <pre id="output"></pre>
+
+  <script>
+    function testSettings() {
+      chrome.storage.local.get(["tavilyApiKey", "openrouterApiKey", "scoutEnabled"], (data) => {
+        document.getElementById("output").textContent = JSON.stringify(data, null, 2);
+        console.log("Saved settings:", data);
+      });
+    }
+  </script>
+</body>
+</html>

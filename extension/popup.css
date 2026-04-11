@@ -60,7 +60,7 @@ body {
 }
 
 .field input[type="password"]:focus {
-  border-color: #3b82f6;
+  border-color: #f59e0b;
 }
 
 .toggle-field {
@@ -72,7 +72,7 @@ body {
 .toggle-field input[type="checkbox"] {
   width: 18px;
   height: 18px;
-  accent-color: #3b82f6;
+  accent-color: #f59e0b;
 }
 
 #save-btn {
@@ -89,13 +89,13 @@ body {
 }
 
 #save-btn:hover {
-  background: #2563eb;
+  background: #d97706;
 }
 
 .status-msg {
   font-size: 0.75rem;
   font-weight: 500;
-  color: #3b82f6;
+  color: #f59e0b;
   min-height: 1rem;
   text-align: center;
 }
