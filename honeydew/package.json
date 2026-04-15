@@ -1,7 +1,7 @@
 {
   "name": "honeytree",
-  "version": "1.0.0",
-  "description": "Grow a pixel-art forest in your terminal every time you use Claude Code",
+  "version": "1.0.1",
+  "description": "Grow a forest in your terminal every time you use Claude Code",
   "type": "module",
   "bin": {
     "honeytree": "./bin/honeydew.js"
@@ -24,11 +24,11 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/varunnukala/honeytree.git"
+    "url": "git+https://github.com/Varun2009178/honeytree.git"
   },
-  "homepage": "https://github.com/varunnukala/honeytree#readme",
+  "homepage": "https://github.com/Varun2009178/honeytree#readme",
   "bugs": {
-    "url": "https://github.com/varunnukala/honeytree/issues"
+    "url": "https://github.com/Varun2009178/honeytree/issues"
   },
   "author": "Varun Nukala",
   "license": "MIT",

@@ -7,8 +7,7 @@ export const metadata: Metadata = {
   description:
     "Honeytree is a CLI that plants pixel-art trees in your terminal every time you use Claude Code.",
   icons: {
-    icon: "/honeydew_logo.jpg",
-    apple: "/honeydew_logo.jpg",
+    icon: "/icon.svg",
   },
 }
 

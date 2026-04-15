@@ -87,6 +87,7 @@ function CliCommands() {
       <div className="command-stack">
         {commands.map((command, index) => (
           <div key={command} className="command-row">
+            <span className="command-step">{index + 1}</span>
             <code>{command}</code>
             <button type="button" onClick={() => copyCommand(command, index)}>
               {copiedIndex === index ? "Copied" : "Copy"}
@@ -114,7 +115,7 @@ export default function Home() {
             Contact
           </a>
           <a
-            href="https://github.com/user/honeytree"
+            href="https://github.com/Varun2009178/honeytree"
             className="nav-link nav-link-icon"
             target="_blank"
             rel="noopener noreferrer"
@@ -132,7 +133,6 @@ export default function Home() {
           <br />
           with Claude Code.
         </h1>
-        <p className="hero-subtitle">Sweet like honey, rooted like a tree.</p>
         <p className="hero-description">
           Honeytree is a CLI that plants pixel-art trees in your terminal every
           time you use Claude Code. Watch your forest grow as you build.

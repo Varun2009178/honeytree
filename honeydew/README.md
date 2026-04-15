@@ -29,10 +29,9 @@ Open this in a separate terminal. It watches your forest file and animates new t
 ## How it works
 
 1. **`honeytree init`** — Creates the forest state file and registers a Claude Code hook
-2. **`honeytree plant`** — Adds a tree (called automatically by the hook after each Claude Code response)
-3. **`honeytree`** — Opens the viewer that renders your forest in real time
+2. **`honeytree`** — Opens the viewer that renders your forest in real time
 
-Every prompt plants a new tree with a random species (oak, pine, birch, willow, or cherry) and growth stage. Existing young trees grow a little each time too.
+After init, a tree is automatically planted after every Claude Code response via the hook. Each tree is a random species (oak, pine, birch, willow, or cherry) and growth stage. Existing young trees grow a little each time too.
 
 ## Biomes
 
