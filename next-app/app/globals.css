@@ -90,6 +90,12 @@ textarea {
   color: var(--text-primary);
 }
 
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
 .nav-link {
   color: var(--text-tertiary);
   font-size: 0.88rem;
@@ -99,6 +105,15 @@ textarea {
 
 .nav-link:hover {
   color: var(--text-primary);
+}
+
+.nav-link-icon {
+  display: flex;
+  align-items: center;
+}
+
+.nav-link-icon svg {
+  transition: color 200ms ease;
 }
 
 /* ── hero ───────────────────────────────────────────────── */
