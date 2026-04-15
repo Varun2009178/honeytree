@@ -1,30 +1,15 @@
-import { DM_Sans, Outfit, Caveat } from "next/font/google"
 import type { Metadata } from "next"
 
 import "./globals.css"
 
-const dmSans = DM_Sans({
-  subsets: ["latin"],
-  variable: "--font-dm-sans",
-  weight: ["400", "500", "600", "700"],
-})
-
-const outfit = Outfit({
-  subsets: ["latin"],
-  variable: "--font-outfit",
-  weight: ["400", "500", "600", "700"],
-})
-
-const caveat = Caveat({
-  subsets: ["latin"],
-  variable: "--font-caveat",
-  weight: ["400", "500", "600", "700"],
-})
-
 export const metadata: Metadata = {
-  title: "Honeydew - Cold DMs have never been sweeter",
+  title: "Honeytree | Grow a Forest with Claude Code",
   description:
-    "AI-powered company research for job seekers. Get funding rounds, product launches, and team intel so your cold DMs actually get replies.",
+    "Honeytree is a CLI that plants pixel-art trees in your terminal every time you use Claude Code.",
+  icons: {
+    icon: "/honeydew_logo.jpg",
+    apple: "/honeydew_logo.jpg",
+  },
 }
 
 export default function RootLayout({
@@ -33,10 +18,15 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${dmSans.variable} ${outfit.variable} ${caveat.variable} antialiased`}
-    >
+    <html lang="en">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@400;500&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body>{children}</body>
     </html>
   )
