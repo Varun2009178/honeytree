@@ -1,38 +1,36 @@
 <wizard-report>
 # PostHog post-wizard report
 
-The wizard has completed a deep integration of PostHog analytics into the Honeydew Next.js landing page. The integration uses `instrumentation-client.ts` for client-side initialization (Next.js 15.3+ pattern), a reverse proxy via `next.config.mjs` rewrites for reliable ingestion, and a server-side `posthog-node` client for API route tracking. Users are identified at the point of waitlist signup using their email as the distinct ID, and the client-side session and distinct IDs are forwarded to the server via request headers so that both client and server events can be correlated.
+The wizard has completed a deep integration of PostHog analytics into this Next.js App Router project. PostHog client-side (`posthog-js`) and server-side (`posthog-node`) packages were already installed; the wizard built on that foundation by wiring up event capture at the key user-action points across the landing page and the Honeydew API routes. Environment variables were confirmed and updated in `.env.local`. The `instrumentation-client.ts` initialisation was updated to include the recommended `defaults: "2026-01-30"` option.
 
-## Files created or modified
+## Files modified
 
 | File | Change |
 |---|---|
-| `instrumentation-client.ts` | **Created** — initializes `posthog-js` with the reverse-proxy host, error tracking (`capture_exceptions`), and debug mode in development |
-| `lib/posthog-server.ts` | **Created** — singleton `posthog-node` client for server-side event capture |
-| `next.config.mjs` | **Modified** — added `/ingest` reverse proxy rewrites and `skipTrailingSlashRedirect: true` |
-| `.env.local` | **Modified** — added `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN` and `NEXT_PUBLIC_POSTHOG_HOST` |
-| `app/page.tsx` | **Modified** — added PostHog import + 3 client-side events (see table below) |
-| `app/api/waitlist/route.ts` | **Modified** — added server-side `waitlist_signup_completed` event with correlated distinct/session IDs |
+| `instrumentation-client.ts` | Added `defaults: "2026-01-30"` to PostHog init config |
+| `app/page.tsx` | Added `posthog-js` import; `command_copied` capture in `copyCommand`; `github_link_clicked` capture on GitHub nav link |
+| `app/api/research/route.ts` | Imported `getPostHogClient`; `research_limit_reached` capture on 429 response; `research_generated` capture after successful stream completion |
 
 ## Tracked events
 
 | Event | Description | File |
 |---|---|---|
-| `get_early_access_clicked` | User clicks the "Get early access" CTA in the hero section | `app/page.tsx` |
-| `get_access_clicked` | User clicks the "Get Access" button in the navbar | `app/page.tsx` |
-| `waitlist_form_submitted` | User submits the waitlist form (client-side, top of conversion funnel). Also calls `posthog.identify()` with the user's email. | `app/page.tsx` |
-| `waitlist_signup_completed` | Server-side: waitlist email was successfully processed (correlated via `X-POSTHOG-DISTINCT-ID` / `X-POSTHOG-SESSION-ID` headers) | `app/api/waitlist/route.ts` |
+| `command_copied` | User copies a CLI install/init command from the landing page | `app/page.tsx` |
+| `github_link_clicked` | User clicks the GitHub header link — top of conversion funnel | `app/page.tsx` |
+| `research_generated` | AI research brief successfully streamed for a LinkedIn profile | `app/api/research/route.ts` |
+| `research_limit_reached` | User exhausted the 3-generation free tier cap | `app/api/research/route.ts` |
+| `waitlist_signup_completed` | Waitlist signup stored and notification sent *(pre-existing)* | `app/api/waitlist/route.ts` |
 
 ## Next steps
 
 We've built some insights and a dashboard for you to keep an eye on user behavior, based on the events we just instrumented:
 
-- **Dashboard — Analytics basics**: https://us.posthog.com/project/377570/dashboard/1455240
-- **Waitlist Conversion Funnel** (Hero CTA → Form → Signup): https://us.posthog.com/project/377570/insights/g9Deuflh
-- **Daily Waitlist Signups** (30-day trend): https://us.posthog.com/project/377570/insights/bfBPbUFB
-- **CTA Clicks: Hero vs Navbar** (bar chart comparison): https://us.posthog.com/project/377570/insights/HlovTDuI
-- **Total Waitlist Signups** (90-day count): https://us.posthog.com/project/377570/insights/YdhAwLko
-- **Navbar CTA → Signup Funnel**: https://us.posthog.com/project/377570/insights/Bc0w62wi
+- **Dashboard — Analytics basics**: https://us.posthog.com/project/382616/dashboard/1469072
+- **Waitlist conversion funnel** (GitHub click → command copied → signup): https://us.posthog.com/project/382616/insights/MvwgRON9
+- **Research generations over time**: https://us.posthog.com/project/382616/insights/p6TVHrxx
+- **CLI commands copied by step**: https://us.posthog.com/project/382616/insights/D0naqSK4
+- **Research limit reached (churn signal)**: https://us.posthog.com/project/382616/insights/jE6db1mQ
+- **Waitlist signups over time**: https://us.posthog.com/project/382616/insights/5UPFUIqx
 
 ### Agent skill
 

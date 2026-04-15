@@ -2,31 +2,42 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Honeydew Settings</title>
+  <title>Honeydew</title>
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
   <div class="popup-container">
-    <h1 class="popup-title">Honeydew</h1>
-    <p class="popup-subtitle">Cold DM Research for Job Seekers</p>
-
-    <div class="field">
-      <label for="tavily-key">Tavily API Key</label>
-      <input type="password" id="tavily-key" placeholder="tvly-...">
+    <div class="popup-header">
+      <h1 class="popup-title">Honeydew</h1>
+      <p class="popup-subtitle">Cold DM Research for Job Seekers</p>
     </div>
 
-    <div class="field">
-      <label for="openrouter-key">OpenRouter API Key</label>
-      <input type="password" id="openrouter-key" placeholder="sk-or-...">
+    <div class="usage-section">
+      <div class="usage-label">
+        <span>Free researches</span>
+        <span id="usage-text" class="usage-count">Loading...</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
     </div>
 
-    <div class="field toggle-field">
-      <label for="honeydew-enabled">Enable Honeydew</label>
-      <input type="checkbox" id="honeydew-enabled" checked>
+    <div class="hotkey-section">
+      <div class="hotkey-label">Quick launch</div>
+      <div class="hotkey-row">
+        <kbd id="hotkey-display">⌘⇧H</kbd>
+        <span class="hotkey-desc">on any LinkedIn profile</span>
+      </div>
     </div>
 
-    <button id="save-btn">Save</button>
-    <p id="status-msg" class="status-msg"></p>
+    <div id="waitlist-section" class="waitlist-section" style="display:none">
+      <p class="waitlist-msg">Want unlimited researches?</p>
+      <div class="waitlist-row">
+        <input type="email" id="waitlist-email" placeholder="your@email.com" />
+        <button id="waitlist-btn">Join Waitlist</button>
+      </div>
+      <p id="waitlist-status" class="waitlist-status"></p>
+    </div>
   </div>
   <script src="popup.js"></script>
 </body>

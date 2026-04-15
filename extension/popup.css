@@ -7,9 +7,9 @@
 }
 
 body {
-  font-family: 'DM Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  background: #ffffff;
-  color: #222222;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #fffdf7;
+  color: #1a1a1a;
   width: 300px;
   padding: 24px;
 }
@@ -17,85 +17,164 @@ body {
 .popup-container {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
+}
+
+.popup-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .popup-title {
-  font-family: 'Outfit', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  font-size: 1.5rem;
+  font-family: 'Outfit', 'DM Sans', sans-serif;
+  font-size: 1.4rem;
   font-weight: 600;
-  color: #222222;
-  line-height: 1.10;
+  color: #1a1a1a;
+  line-height: 1.1;
 }
 
 .popup-subtitle {
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 400;
-  color: #45515e;
-  margin-top: -8px;
+  color: #6b7280;
 }
 
-.field {
+/* Usage */
+.usage-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.usage-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8125rem;
+  color: #6b7280;
+}
+
+.usage-count {
+  font-weight: 600;
+  color: #b45309;
+}
+
+.progress-bar {
+  height: 6px;
+  background: rgba(245, 158, 11, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #f59e0b;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+  width: 0%;
+}
+
+/* Hotkey */
+.hotkey-section {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.field label {
-  font-size: 0.8125rem;
+.hotkey-label {
+  font-size: 0.75rem;
   font-weight: 600;
-  color: #222222;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-.field input[type="password"] {
-  font-family: 'DM Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  font-size: 0.875rem;
-  padding: 10px 12px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+.hotkey-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+kbd {
+  display: inline-block;
+  padding: 4px 10px;
+  border: 1px solid rgba(245, 158, 11, 0.15);
+  border-radius: 6px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  background: #fffbeb;
+  color: #b45309;
+}
+
+.hotkey-desc {
+  font-size: 0.8125rem;
+  color: #6b7280;
+}
+
+/* Waitlist */
+.waitlist-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(245, 158, 11, 0.1);
+}
+
+.waitlist-msg {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #1a1a1a;
+}
+
+.waitlist-row {
+  display: flex;
+  gap: 6px;
+}
+
+.waitlist-row input {
+  flex: 1;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.8125rem;
+  padding: 8px 10px;
+  border: 1px solid rgba(245, 158, 11, 0.15);
+  border-radius: 6px;
+  background: #fff;
+  color: #1a1a1a;
   outline: none;
-  color: #222222;
-  background: #ffffff;
   transition: border-color 0.2s ease;
 }
 
-.field input[type="password"]:focus {
-  border-color: #f59e0b;
+.waitlist-row input:focus {
+  border-color: #d97706;
 }
 
-.toggle-field {
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
+.waitlist-row input::placeholder {
+  color: #c4c9d0;
 }
 
-.toggle-field input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  accent-color: #f59e0b;
-}
-
-#save-btn {
-  font-family: 'DM Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  font-size: 0.875rem;
+.waitlist-row button {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.75rem;
   font-weight: 600;
-  color: #ffffff;
-  background: #181e25;
+  padding: 8px 12px;
+  background: #1a1a1a;
+  color: #fff;
   border: none;
-  border-radius: 8px;
-  padding: 11px 20px;
+  border-radius: 6px;
   cursor: pointer;
   transition: background 0.2s ease;
+  white-space: nowrap;
 }
 
-#save-btn:hover {
+.waitlist-row button:hover {
   background: #d97706;
 }
 
-.status-msg {
+.waitlist-status {
   font-size: 0.75rem;
   font-weight: 500;
   color: #f59e0b;
   min-height: 1rem;
-  text-align: center;
 }

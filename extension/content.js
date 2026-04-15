@@ -1,14 +1,19 @@
-// Honeydew content script — Liquid Glass dock + Frosted floating panel + Streaming
-// All research logic runs HERE (not in background SW) to avoid Manifest V3 SW termination
+// Honeydew content script — Command Mode overlay (Spotlight-style)
+// NO DOM scraping — only reads document.title + URL for LinkedIn ToS compliance
+// NO persistent UI — only appears on hotkey (Cmd+Shift+H)
+// All API calls go through server proxy (no API keys in extension)
 
 (function () {
   "use strict";
 
   // ==========================================
+  // CONFIG
+  // ==========================================
+  const API_BASE = "https://tryhoney.xyz"; // dev: "http://localhost:3000"
+
+  // ==========================================
   // STATE
   // ==========================================
-  let dockRoot = null;
-  let dockShadow = null;
   let panelRoot = null;
   let panelShadow = null;
   let lastResearchedName = "";
@@ -17,22 +22,37 @@
   let isResearching = false;
   let panelVisible = false;
   let suggestedOpener = "";
-  let currentRecipient = null;
-  let currentTheme = "dark";
-  let themeManualOverride = false;
+  let currentTheme = "light";
   let abortController = null;
   let renderPending = false;
   let streamState = null;
+  let remainingGenerations = null; // fetched from server
+  let cachedFingerprint = null;
   // Drag state
   let isDragging = false;
   let dragStartX = 0;
   let dragStartY = 0;
   let panelStartX = 0;
   let panelStartY = 0;
-  // URL change detection
-  let lastCheckedUrl = "";
-  let lastCheckedTitle = "";
-  let debounceTimer = null;
+  // User context (persisted)
+  let userContext = null; // { targetRole: string, experience: string }
+
+  // ==========================================
+  // FINGERPRINT
+  // ==========================================
+  async function getFingerprint() {
+    if (cachedFingerprint) return cachedFingerprint;
+    const raw = [
+      navigator.userAgent,
+      screen.width + "x" + screen.height,
+      Intl.DateTimeFormat().resolvedOptions().timeZone,
+      navigator.language,
+      navigator.hardwareConcurrency,
+    ].join("|");
+    const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(raw));
+    cachedFingerprint = Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, "0")).join("");
+    return cachedFingerprint;
+  }
 
   // ==========================================
   // THEME DETECTION
@@ -48,253 +68,107 @@
     return window.matchMedia("(prefers-color-scheme: dark)").matches ? "light" : "dark";
   }
 
-  function applyTheme() {
-    if (themeManualOverride) return;
-    const theme = detectPageTheme();
-    if (theme === currentTheme) return;
-    currentTheme = theme;
-    if (dockShadow) {
-      const dock = dockShadow.querySelector(".dock");
-      if (dock) {
-        dock.classList.remove("theme-dark", "theme-light");
-        dock.classList.add("theme-" + theme);
-      }
-    }
-    if (panelShadow) {
-      const panel = panelShadow.querySelector(".honeydew-panel");
-      if (panel) {
-        panel.classList.remove("theme-dark", "theme-light");
-        panel.classList.add("theme-" + theme);
-      }
-    }
-  }
-
   // ==========================================
   // SVG ICONS
   // ==========================================
   const ICONS = {
     honeydew: `<svg width="22" height="22" viewBox="0 0 32 32" fill="currentColor" stroke="none"><path d="M16 2C16 2 6 13 6 20a10 10 0 0 0 20 0c0-7-10-18-10-18z"/><path d="M13 22a3.5 3.5 0 0 1-2-3c0-2 2-5 2-5" stroke="white" fill="none" stroke-width="2" stroke-linecap="round" opacity="0.4"/></svg>`,
-    research: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`,
-    sun: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`,
-    moon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`,
-    settings: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`,
     close: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
     stop: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>`,
     copy: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`,
     check: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+    share: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`,
   };
 
   // ==========================================
-  // SVG GLASS DISTORTION FILTER
-  // ==========================================
-  const GLASS_FILTER_SVG = `
-    <svg style="position:absolute;width:0;height:0;pointer-events:none;">
-      <filter id="honeydew-glass-distortion" x="0%" y="0%" width="100%" height="100%" filterUnits="objectBoundingBox">
-        <feTurbulence type="fractalNoise" baseFrequency="0.001 0.005" numOctaves="1" seed="17" result="turbulence"/>
-        <feComponentTransfer in="turbulence" result="mapped">
-          <feFuncR type="gamma" amplitude="1" exponent="10" offset="0.5"/>
-          <feFuncG type="gamma" amplitude="0" exponent="1" offset="0"/>
-          <feFuncB type="gamma" amplitude="0" exponent="1" offset="0.5"/>
-        </feComponentTransfer>
-        <feGaussianBlur in="turbulence" stdDeviation="3" result="softMap"/>
-        <feSpecularLighting in="softMap" surfaceScale="5" specularConstant="1" specularExponent="100" lighting-color="white" result="specLight">
-          <fePointLight x="-200" y="-200" z="300"/>
-        </feSpecularLighting>
-        <feComposite in="specLight" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="litImage"/>
-        <feDisplacementMap in="SourceGraphic" in2="softMap" scale="200" xChannelSelector="R" yChannelSelector="G"/>
-      </filter>
-    </svg>
-  `;
-
-  // ==========================================
-  // DOCK CSS
-  // ==========================================
-  const DOCK_CSS = `
-    :host {
-      all: initial;
-      position: fixed;
-      top: 12px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 2147483647;
-      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
-      pointer-events: none;
-    }
-    .dock.theme-dark {
-      --glass-tint: rgba(20, 20, 30, 0.6);
-      --glass-border: rgba(255, 255, 255, 0.12);
-      --shine-top: rgba(255, 255, 255, 0.15);
-      --shine-bottom: rgba(255, 255, 255, 0.05);
-      --icon-color: rgba(255, 255, 255, 0.65);
-      --icon-hover-color: #fff;
-      --icon-hover-bg: rgba(255, 255, 255, 0.1);
-      --separator-color: rgba(255, 255, 255, 0.1);
-      --dock-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
-    }
-    .dock.theme-light {
-      --glass-tint: rgba(255, 255, 255, 0.35);
-      --glass-border: rgba(255, 255, 255, 0.45);
-      --shine-top: rgba(255, 255, 255, 0.5);
-      --shine-bottom: rgba(255, 255, 255, 0.2);
-      --icon-color: rgba(0, 0, 0, 0.5);
-      --icon-hover-color: rgba(0, 0, 0, 0.85);
-      --icon-hover-bg: rgba(255, 255, 255, 0.3);
-      --separator-color: rgba(0, 0, 0, 0.08);
-      --dock-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-    }
-    .dock {
-      pointer-events: auto;
-      position: relative;
-      display: flex;
-      overflow: hidden;
-      border-radius: 24px;
-      padding: 10px 14px;
-      box-shadow: var(--dock-shadow);
-      transition: all 0.7s cubic-bezier(0.175, 0.885, 0.32, 2.2);
-      cursor: default;
-      user-select: none; -webkit-user-select: none;
-    }
-    .dock:hover { padding: 12px 16px; border-radius: 28px; }
-    .dock .glass-layer-blur {
-      position: absolute; inset: 0; z-index: 0;
-      overflow: hidden; border-radius: inherit;
-      backdrop-filter: blur(24px) saturate(200%);
-      -webkit-backdrop-filter: blur(24px) saturate(200%);
-      filter: url(#honeydew-glass-distortion);
-      isolation: isolate;
-    }
-    .dock .glass-layer-tint {
-      position: absolute; inset: 0; z-index: 10;
-      border-radius: inherit;
-      background: var(--glass-tint);
-    }
-    .dock .glass-layer-shine {
-      position: absolute; inset: 0; z-index: 20;
-      border-radius: inherit; overflow: hidden;
-      box-shadow: inset 0 1px 0 0 var(--shine-top), inset 0 -1px 0 0 var(--shine-bottom);
-      border: 1px solid var(--glass-border);
-    }
-    .dock-content {
-      position: relative; z-index: 30;
-      display: flex; align-items: center; gap: 4px;
-    }
-    .dock-item {
-      display: flex; align-items: center; justify-content: center;
-      width: 40px; height: 40px;
-      border: none; border-radius: 12px;
-      background: transparent;
-      color: var(--icon-color);
-      cursor: pointer;
-      transition: all 0.7s cubic-bezier(0.175, 0.885, 0.32, 2.2);
-      position: relative; transform-origin: center center;
-      user-select: none; -webkit-user-select: none;
-      overflow: hidden;
-    }
-    .dock-item:hover {
-      color: var(--icon-hover-color);
-      transform: scale(1.2);
-      background: var(--icon-hover-bg);
-      box-shadow: 0 0 12px rgba(59, 130, 246, 0.2);
-    }
-    .dock-item:active { transform: scale(0.92); }
-    .dock-item.active { color: #f59e0b; background: rgba(59, 130, 246, 0.12); }
-    .dock-item.pulsing { animation: dockGlow 2s ease-in-out infinite; }
-    .dock-item.loading::after {
-      content: ''; position: absolute; inset: -3px;
-      border-radius: 14px;
-      border: 2px solid transparent;
-      border-top-color: #f59e0b;
-      animation: dockSpin 0.8s linear infinite;
-    }
-    .dock-separator { width: 1px; height: 20px; background: var(--separator-color); margin: 0 4px; }
-    @keyframes dockGlow {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
-      50% { box-shadow: 0 0 12px 4px rgba(59, 130, 246, 0.2); }
-    }
-    @keyframes dockSpin { to { transform: rotate(360deg); } }
-  `;
-
-  // ==========================================
-  // PANEL CSS
+  // PANEL CSS (command-mode overlay)
   // ==========================================
   const PANEL_CSS = `
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Outfit:wght@500;600&display=swap');
     :host {
       all: initial;
       position: fixed; top: 0; left: 0; width: 0; height: 0;
       z-index: 2147483646;
-      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       pointer-events: none;
     }
-    .honeydew-panel.theme-dark {
-      --panel-bg: rgba(20, 20, 30, 0.72);
-      --panel-border: rgba(255, 255, 255, 0.1);
-      --panel-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
-      --text-primary: rgba(255, 255, 255, 0.88);
-      --text-secondary: rgba(255, 255, 255, 0.5);
-      --text-muted: rgba(255, 255, 255, 0.25);
-      --border-subtle: rgba(255, 255, 255, 0.06);
-      --hover-bg: rgba(255, 255, 255, 0.08);
-      --scrollbar-thumb: rgba(255, 255, 255, 0.1);
-      --dot-failed: rgba(255, 255, 255, 0.15);
-      --fallback-border: rgba(255, 255, 255, 0.05);
-      --dm-bg: rgba(59, 130, 246, 0.1);
-      --dm-border: rgba(59, 130, 246, 0.22);
-      --copy-bg: rgba(59, 130, 246, 0.08);
-      --copy-border: rgba(59, 130, 246, 0.25);
-      --copy-hover-bg: rgba(59, 130, 246, 0.18);
+    .honeydew-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0, 0, 0, 0);
+      transition: background 0.3s ease;
+      pointer-events: none;
+      z-index: 1;
     }
+    .honeydew-overlay.visible {
+      background: rgba(0, 0, 0, 0.18);
+      pointer-events: auto;
+    }
+    .honeydew-panel.theme-dark,
     .honeydew-panel.theme-light {
-      --panel-bg: rgba(255, 255, 255, 0.45);
-      --panel-border: rgba(255, 255, 255, 0.55);
-      --panel-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
-      --text-primary: rgba(0, 0, 0, 0.78);
-      --text-secondary: rgba(0, 0, 0, 0.5);
-      --text-muted: rgba(0, 0, 0, 0.25);
-      --border-subtle: rgba(0, 0, 0, 0.06);
-      --hover-bg: rgba(0, 0, 0, 0.06);
-      --scrollbar-thumb: rgba(0, 0, 0, 0.1);
-      --dot-failed: rgba(0, 0, 0, 0.15);
-      --fallback-border: rgba(0, 0, 0, 0.05);
-      --dm-bg: rgba(59, 130, 246, 0.06);
-      --dm-border: rgba(59, 130, 246, 0.18);
-      --copy-bg: rgba(59, 130, 246, 0.05);
-      --copy-border: rgba(59, 130, 246, 0.2);
-      --copy-hover-bg: rgba(59, 130, 246, 0.12);
+      --panel-bg: #fffdf7;
+      --panel-border: rgba(245, 158, 11, 0.12);
+      --panel-shadow: 0 8px 40px rgba(180, 140, 60, 0.10), 0 2px 12px rgba(245, 158, 11, 0.06);
+      --text-primary: #1a1a1a;
+      --text-secondary: #6b7280;
+      --text-muted: #9ca3af;
+      --border-subtle: rgba(245, 158, 11, 0.08);
+      --hover-bg: rgba(245, 158, 11, 0.06);
+      --scrollbar-thumb: rgba(245, 158, 11, 0.15);
+      --dot-failed: #d1d5db;
+      --fallback-border: rgba(245, 158, 11, 0.06);
+      --dm-bg: #fffbeb;
+      --dm-border: rgba(245, 158, 11, 0.18);
+      --copy-bg: rgba(245, 158, 11, 0.06);
+      --copy-border: rgba(245, 158, 11, 0.2);
+      --copy-hover-bg: rgba(245, 158, 11, 0.12);
     }
     .honeydew-panel {
       pointer-events: auto;
       position: fixed;
-      top: 80px;
-      left: calc(50% - 200px);
-      width: 400px;
-      max-height: calc(100vh - 120px);
+      top: 38%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.92);
+      width: 440px;
+      max-height: 70vh;
       background: var(--panel-bg);
-      backdrop-filter: blur(28px) saturate(200%);
-      -webkit-backdrop-filter: blur(28px) saturate(200%);
       border: 1px solid var(--panel-border);
       border-radius: 20px;
       box-shadow: var(--panel-shadow);
       overflow: hidden;
       display: flex; flex-direction: column;
       opacity: 0;
-      transition: opacity 0.25s ease;
+      transition: opacity 0.25s ease, transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.4);
+      z-index: 2;
     }
-    .honeydew-panel.visible { opacity: 1; }
+    .honeydew-panel.visible {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
     .panel-header {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 14px 18px 10px;
+      padding: 16px 20px 12px;
       cursor: grab; user-select: none;
       border-bottom: 1px solid var(--border-subtle);
       flex-shrink: 0;
+      background: rgba(255, 251, 235, 0.5);
     }
     .panel-header:active { cursor: grabbing; }
     .panel-header-left { display: flex; align-items: center; gap: 10px; }
-    .panel-header-icon { color: #f59e0b; display: flex; }
+    .panel-header-icon { color: #d97706; display: flex; }
     .panel-title {
-      font-size: 14px; font-weight: 600;
+      font-family: 'Outfit', 'DM Sans', sans-serif;
+      font-size: 15px; font-weight: 600;
       color: var(--text-primary);
       overflow: hidden; text-overflow: ellipsis;
-      white-space: nowrap; max-width: 250px;
+      white-space: nowrap; max-width: 240px;
+    }
+    .remaining-badge {
+      font-size: 11px; font-weight: 600;
+      color: #b45309;
+      background: rgba(245, 158, 11, 0.1);
+      padding: 2px 8px;
+      border-radius: 12px;
+      white-space: nowrap;
     }
     .panel-header-right { display: flex; align-items: center; gap: 4px; }
     .panel-close, .panel-cancel {
@@ -309,13 +183,14 @@
       background: var(--hover-bg);
       color: var(--text-secondary);
     }
-    .panel-cancel { color: #dc2626; }
-    .panel-cancel:hover { color: #ef4444; background: rgba(220, 38, 38, 0.1); }
+    .panel-cancel { color: #b45309; }
+    .panel-cancel:hover { color: #92400e; background: rgba(245, 158, 11, 0.1); }
     .panel-body {
-      padding: 14px 18px 18px;
+      padding: 16px 20px 20px;
       overflow-y: auto; flex: 1;
-      max-height: calc(100vh - 200px);
+      max-height: calc(70vh - 60px);
       scroll-behavior: smooth;
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     }
     .panel-body::-webkit-scrollbar { width: 3px; }
     .panel-body::-webkit-scrollbar-track { background: transparent; }
@@ -326,16 +201,17 @@
       color: var(--text-secondary);
       opacity: 0; animation: fadeIn 0.35s ease forwards;
     }
-    .search-dot { width: 6px; height: 6px; border-radius: 50%; background: #f59e0b; flex-shrink: 0; }
+    .search-dot { width: 6px; height: 6px; border-radius: 50%; background: #d97706; flex-shrink: 0; }
     .search-dot.active { animation: dotPulse 1.2s ease-in-out infinite; }
-    .search-dot.done { background: #22c55e; }
+    .search-dot.done { background: #16a34a; }
     .search-dot.failed { background: var(--dot-failed); }
     .search-status { margin-left: auto; font-size: 10.5px; color: var(--text-muted); }
     .stream-content {
-      font-size: 13px; line-height: 1.65;
+      font-size: 13.5px; line-height: 1.65;
       color: var(--text-primary);
       word-wrap: break-word;
       letter-spacing: 0.01em;
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     }
     .dm-section {
       margin-bottom: 16px;
@@ -347,9 +223,10 @@
     }
     .dm-label {
       display: flex; align-items: center; gap: 6px;
-      font-size: 10px; font-weight: 700;
-      letter-spacing: 0.12em; text-transform: uppercase;
-      color: #f59e0b;
+      font-family: 'Outfit', 'DM Sans', sans-serif;
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: #b45309;
       margin-bottom: 8px;
     }
     .dm-card {
@@ -364,29 +241,30 @@
       display: flex; align-items: center; gap: 6px;
       margin-top: 10px;
     }
-    .dm-copy-btn {
+    .dm-copy-btn, .dm-share-btn {
       display: flex; align-items: center; justify-content: center; gap: 6px;
       padding: 8px 16px;
       border: 1px solid var(--copy-border);
-      border-radius: 10px;
+      border-radius: 8px;
       background: var(--copy-bg);
-      color: #f59e0b;
+      color: #b45309;
       font-size: 12px; font-weight: 600;
       letter-spacing: 0.03em;
       cursor: pointer; transition: all 0.15s ease;
-      font-family: inherit;
+      font-family: 'DM Sans', inherit;
     }
-    .dm-copy-btn:hover { background: var(--copy-hover-bg); transform: translateY(-1px); }
-    .dm-copy-btn:active { transform: translateY(0); }
-    .dm-copy-btn.copied { color: #22c55e; border-color: rgba(34, 197, 94, 0.3); background: rgba(34, 197, 94, 0.08); }
+    .dm-copy-btn:hover, .dm-share-btn:hover { background: var(--copy-hover-bg); transform: translateY(-1px); }
+    .dm-copy-btn:active, .dm-share-btn:active { transform: translateY(0); }
+    .dm-copy-btn.copied, .dm-share-btn.copied { color: #16a34a; border-color: rgba(22, 163, 74, 0.2); background: rgba(22, 163, 74, 0.06); }
     .section-label {
       display: block;
-      font-size: 10px; font-weight: 700;
-      letter-spacing: 0.12em; text-transform: uppercase;
-      color: #f59e0b;
-      margin-top: 16px; margin-bottom: 6px;
-      padding-bottom: 4px;
-      border-bottom: 1px solid rgba(59, 130, 246, 0.15);
+      font-family: 'Outfit', 'DM Sans', sans-serif;
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: #b45309;
+      margin-top: 18px; margin-bottom: 8px;
+      padding-bottom: 5px;
+      border-bottom: 1px solid rgba(245, 158, 11, 0.1);
       animation: fadeIn 0.3s ease both;
     }
     .section-label:first-child { margin-top: 0; }
@@ -397,7 +275,7 @@
       animation: fadeIn 0.3s ease both;
     }
     .hook-bullet {
-      color: #f59e0b; font-weight: 700; flex-shrink: 0; margin-top: 1px;
+      color: #d97706; font-weight: 700; flex-shrink: 0; margin-top: 1px;
     }
     .hook-text { flex: 1; }
     .who-text {
@@ -408,7 +286,7 @@
     }
     .stream-cursor {
       display: inline-block; width: 2px; height: 1.1em;
-      background: #f59e0b; vertical-align: text-bottom;
+      background: #d97706; vertical-align: text-bottom;
       margin-left: 2px;
       border-radius: 1px;
       animation: cursorPulse 1.5s ease-in-out infinite;
@@ -419,18 +297,149 @@
     }
     .idle-msg {
       text-align: center; padding: 36px 16px;
-      color: var(--text-muted); font-size: 12.5px; line-height: 1.6;
+      color: var(--text-secondary); font-size: 13px; line-height: 1.6;
+    }
+    .idle-msg kbd {
+      display: inline-block;
+      padding: 2px 7px;
+      border: 1px solid rgba(245, 158, 11, 0.15);
+      border-radius: 6px;
+      font-family: 'DM Sans', inherit;
+      font-size: 11px;
+      background: #fffbeb;
+      color: #b45309;
     }
     .error-msg {
       text-align: center; padding: 24px 16px;
-      color: #dc2626; font-size: 12.5px;
+      color: #92400e; font-size: 12.5px;
     }
-    .fallback-item {
-      padding: 6px 0;
-      border-bottom: 1px solid var(--fallback-border);
+    .onboarding {
+      padding: 24px 20px;
+      display: flex; flex-direction: column; gap: 18px;
     }
-    .fallback-title { color: var(--text-primary); font-size: 12.5px; font-weight: 500; }
-    .fallback-snippet { color: var(--text-secondary); font-size: 11.5px; margin-top: 2px; }
+    .onboarding-heading {
+      font-family: 'Outfit', 'DM Sans', sans-serif;
+      font-size: 16px; font-weight: 600;
+      color: var(--text-primary);
+      margin: 0;
+    }
+    .onboarding-sub {
+      font-size: 13px; color: var(--text-secondary);
+      line-height: 1.5; margin: -8px 0 0 0;
+    }
+    .onboarding-field {
+      display: flex; flex-direction: column; gap: 5px;
+    }
+    .onboarding-label {
+      font-size: 12px; font-weight: 600;
+      color: var(--text-primary);
+    }
+    .onboarding-input {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      padding: 10px 12px;
+      border: 1px solid rgba(245, 158, 11, 0.15);
+      border-radius: 10px;
+      background: #fff;
+      color: var(--text-primary);
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+    .onboarding-input:focus {
+      border-color: #d97706;
+    }
+    .onboarding-input::placeholder {
+      color: #c4c9d0;
+    }
+    .onboarding-btn {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px; font-weight: 600;
+      padding: 11px 20px;
+      background: #1a1a1a;
+      color: #fff;
+      border: none; border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+      margin-top: 4px;
+    }
+    .onboarding-btn:hover { background: #d97706; }
+    .edit-context {
+      font-size: 11px;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: color 0.15s ease;
+      background: none; border: none;
+      font-family: 'DM Sans', sans-serif;
+      padding: 0; margin-left: auto;
+    }
+    .edit-context:hover { color: #d97706; }
+    .waitlist-capture {
+      margin-top: 20px;
+      padding: 16px;
+      background: rgba(245, 158, 11, 0.04);
+      border: 1px solid rgba(245, 158, 11, 0.12);
+      border-radius: 14px;
+      text-align: center;
+      animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+    .waitlist-capture p {
+      font-size: 13px; font-weight: 500;
+      color: var(--text-primary);
+      margin: 0 0 12px 0;
+    }
+    .waitlist-capture-row {
+      display: flex; gap: 8px;
+    }
+    .waitlist-capture input {
+      flex: 1;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      padding: 9px 12px;
+      border: 1px solid rgba(245, 158, 11, 0.15);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--text-primary);
+      outline: none;
+    }
+    .waitlist-capture input:focus { border-color: #d97706; }
+    .waitlist-capture input::placeholder { color: #c4c9d0; }
+    .waitlist-capture button {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px; font-weight: 600;
+      padding: 9px 16px;
+      background: #1a1a1a;
+      color: #fff;
+      border: none; border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+      white-space: nowrap;
+    }
+    .waitlist-capture button:hover { background: #d97706; }
+    .waitlist-capture .waitlist-success {
+      font-size: 13px; color: #16a34a; font-weight: 500;
+    }
+    .limit-msg {
+      text-align: center; padding: 32px 20px;
+    }
+    .limit-msg h3 {
+      font-family: 'Outfit', 'DM Sans', sans-serif;
+      font-size: 16px; font-weight: 600;
+      color: var(--text-primary);
+      margin: 0 0 8px 0;
+    }
+    .limit-msg p {
+      font-size: 13px; color: var(--text-secondary);
+      line-height: 1.5; margin: 0 0 16px 0;
+    }
+    .toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: #1a1a1a; color: #fff;
+      font-size: 12px; font-weight: 500;
+      padding: 8px 16px; border-radius: 8px;
+      opacity: 0; transition: opacity 0.3s ease;
+      pointer-events: none; z-index: 10;
+    }
+    .toast.visible { opacity: 1; }
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(4px); }
       to { opacity: 1; transform: translateY(0); }
@@ -457,18 +466,7 @@
   }
 
   // ==========================================
-  // PAGE TYPE DETECTION
-  // ==========================================
-  function isProfilePage() {
-    return /^\/in\/[^/]+\/?$/.test(window.location.pathname);
-  }
-
-  function isMessagingPage() {
-    return window.location.pathname.includes("/messaging");
-  }
-
-  // ==========================================
-  // NAME DETECTION
+  // NAME DETECTION (ToS-safe: title + URL only)
   // ==========================================
   const JUNK_NAMES = new Set([
     "linkedin", "messaging", "feed", "home", "notifications", "my network",
@@ -488,168 +486,81 @@
     return true;
   }
 
-  function detectRecipient() {
-    if (isProfilePage()) {
-      const h1 = document.querySelector("h1");
-      if (h1) {
-        const name = h1.textContent.trim();
-        if (looksLikePersonName(name)) {
-          let title = "";
-          let company = "";
-          const headline = document.querySelector(".text-body-medium");
-          if (headline) {
-            const fullHeadline = headline.textContent.trim();
-            const atMatch = fullHeadline.match(/^(.+?)\s+at\s+(.+)$/i);
-            const commaMatch = fullHeadline.match(/^(.+?),\s*(.+)$/);
-            if (atMatch) {
-              title = atMatch[1].trim();
-              company = atMatch[2].trim();
-            } else if (commaMatch) {
-              title = commaMatch[1].trim();
-              company = commaMatch[2].trim();
-            } else {
-              title = fullHeadline;
-            }
-          }
-          return { name, title, company };
-        }
-      }
-      const pageTitle = document.title || "";
-      const pm = pageTitle.match(/^(.+?)\s*[-–—|]\s*/);
-      if (pm && looksLikePersonName(pm[1].trim())) {
-        return { name: pm[1].trim(), title: "", company: "" };
-      }
-      return null;
-    }
+  function getNameFromPage() {
+    const pageTitle = document.title || "";
+    const url = window.location.pathname;
 
-    function grabMessagingHeadline() {
-      const headerParas = document.querySelectorAll(".msg-entity-lockup__entity-title ~ p, .msg-overlay-bubble-header__subtitle, .msg-s-message-list-container ~ p");
-      for (const p of headerParas) {
-        const t = p.textContent.trim();
-        if (t && t.length > 3 && t.length < 120) return t;
-      }
-      return "";
-    }
-
-    const title = document.title || "";
-    const m = title.match(/^(.+?)\s*[\|–—-]\s*(?:LinkedIn|Messaging)/i);
-    if (m) {
-      const name = m[1].trim();
+    // Profile/messaging title: "Name - Headline | LinkedIn"
+    const fullMatch = pageTitle.match(/^(.+?)\s*[-\u2013\u2014]\s*(.+?)\s*\|\s*LinkedIn/);
+    if (fullMatch) {
+      const name = fullMatch[1].trim();
+      const headline = fullMatch[2].trim();
       if (looksLikePersonName(name)) {
-        return { name, title: grabMessagingHeadline(), company: "" };
-      }
-    }
-    const h2s = document.querySelectorAll("h2");
-    for (const h2 of h2s) {
-      const t = h2.textContent.trim();
-      if (looksLikePersonName(t)) {
-        return { name: t, title: grabMessagingHeadline(), company: "" };
-      }
-    }
-    const links = document.querySelectorAll('a[href*="/in/"]');
-    for (const link of links) {
-      const t = link.textContent.trim();
-      if (looksLikePersonName(t)) {
-        const r = link.getBoundingClientRect();
-        if (r.top > 0 && r.top < window.innerHeight * 0.6 && r.width > 30) {
-          return { name: t, title: grabMessagingHeadline(), company: "" };
+        let title = "", company = "";
+        const atMatch = headline.match(/^(.+?)\s+at\s+(.+)$/i);
+        if (atMatch) {
+          title = atMatch[1].trim();
+          company = atMatch[2].trim();
+        } else {
+          title = headline;
         }
+        return { name, title, company };
       }
     }
+
+    // Simple title: "Name | LinkedIn"
+    const simpleMatch = pageTitle.match(/^(.+?)\s*\|\s*LinkedIn/);
+    if (simpleMatch) {
+      const name = simpleMatch[1].trim();
+      if (looksLikePersonName(name)) {
+        return { name, title: "", company: "" };
+      }
+    }
+
+    // URL fallback: /in/sarah-chen-abc123
+    const pathMatch = url.match(/\/in\/([^/]+)/);
+    if (pathMatch) {
+      const slug = pathMatch[1]
+        .replace(/-[a-f0-9]{4,}$/i, "")
+        .replace(/-/g, " ");
+      const name = slug.replace(/\b\w/g, c => c.toUpperCase());
+      if (looksLikePersonName(name)) {
+        return { name, title: "", company: "" };
+      }
+    }
+
     return null;
   }
 
   // ==========================================
-  // DOCK
+  // USAGE CHECK
   // ==========================================
-  function createDock() {
-    if (dockRoot) return;
-    currentTheme = detectPageTheme();
-
-    dockRoot = document.createElement("div");
-    dockRoot.id = "honeydew-dock-root";
-    document.body.appendChild(dockRoot);
-    dockShadow = dockRoot.attachShadow({ mode: "open" });
-
-    const style = document.createElement("style");
-    style.textContent = DOCK_CSS;
-    dockShadow.appendChild(style);
-
-    const filterContainer = document.createElement("div");
-    filterContainer.innerHTML = GLASS_FILTER_SVG;
-    dockShadow.appendChild(filterContainer);
-
-    const dock = document.createElement("div");
-    dock.className = "dock theme-" + currentTheme;
-    dock.innerHTML = `
-      <div class="glass-layer-blur"></div>
-      <div class="glass-layer-tint"></div>
-      <div class="glass-layer-shine"></div>
-      <div class="dock-content">
-        <button class="dock-item" id="dock-honeydew">${ICONS.honeydew}</button>
-        <div class="dock-separator"></div>
-        <button class="dock-item" id="dock-research">${ICONS.research}</button>
-        <button class="dock-item" id="dock-settings">${ICONS.settings}</button>
-        <div class="dock-separator"></div>
-        <button class="dock-item" id="dock-theme">${currentTheme === "dark" ? ICONS.moon : ICONS.sun}</button>
-      </div>
-    `;
-    dockShadow.appendChild(dock);
-
-    dockShadow.getElementById("dock-honeydew").addEventListener("click", togglePanel);
-
-    dockShadow.getElementById("dock-research").addEventListener("click", () => {
-      const recipient = detectRecipient();
-      if (recipient) {
-        lastResearchedName = "";
-        startResearch(recipient);
-      } else if (currentRecipient) {
-        lastResearchedName = "";
-        startResearch(currentRecipient);
-      } else if (currentName) {
-        lastResearchedName = "";
-        startResearch(currentName);
-      } else {
-        showPanel();
-        setPanelTitle("Honeydew");
-        setPanelBody('<div class="idle-msg">No one found on this page</div>');
+  async function fetchRemaining() {
+    try {
+      const fingerprint = await getFingerprint();
+      const res = await fetch(`${API_BASE}/api/usage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fingerprint }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        remainingGenerations = data.remaining;
+        return data.remaining;
       }
-    });
-
-    dockShadow.getElementById("dock-settings").addEventListener("click", () => {
-      chrome.runtime.sendMessage({ action: "open-settings" });
-    });
-
-    dockShadow.getElementById("dock-theme").addEventListener("click", () => {
-      themeManualOverride = true;
-      currentTheme = currentTheme === "dark" ? "light" : "dark";
-      const dock = dockShadow.querySelector(".dock");
-      if (dock) {
-        dock.classList.remove("theme-dark", "theme-light");
-        dock.classList.add("theme-" + currentTheme);
-      }
-      if (panelShadow) {
-        const panel = panelShadow.querySelector(".honeydew-panel");
-        if (panel) {
-          panel.classList.remove("theme-dark", "theme-light");
-          panel.classList.add("theme-" + currentTheme);
-        }
-      }
-      const btn = dockShadow.getElementById("dock-theme");
-      btn.innerHTML = currentTheme === "dark" ? ICONS.moon : ICONS.sun;
-    });
+    } catch {
+      // silently fail — don't block UI
+    }
+    return null;
   }
 
-  function setDockLoading(on) {
-    if (!dockShadow) return;
-    const el = dockShadow.getElementById("dock-honeydew");
-    if (on) el.classList.add("loading"); else el.classList.remove("loading");
-  }
-
-  function setDockPulsing(on) {
-    if (!dockShadow) return;
-    const el = dockShadow.getElementById("dock-honeydew");
-    if (on) el.classList.add("pulsing"); else el.classList.remove("pulsing");
+  function updateRemainingBadge() {
+    if (!panelShadow) return;
+    const badge = panelShadow.getElementById("remaining-badge");
+    if (badge && remainingGenerations !== null) {
+      badge.textContent = `${remainingGenerations} left`;
+      badge.style.display = "inline-block";
+    }
   }
 
   // ==========================================
@@ -657,6 +568,8 @@
   // ==========================================
   function createPanel() {
     if (panelRoot) return;
+
+    currentTheme = "light"; // always warm theme
 
     panelRoot = document.createElement("div");
     panelRoot.id = "honeydew-panel-root";
@@ -667,6 +580,16 @@
     style.textContent = PANEL_CSS;
     panelShadow.appendChild(style);
 
+    // Dim overlay (click to dismiss)
+    const overlay = document.createElement("div");
+    overlay.className = "honeydew-overlay";
+    overlay.id = "honeydew-overlay";
+    overlay.addEventListener("click", deactivateCommandMode);
+    panelShadow.appendChild(overlay);
+
+    const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+    const shortcutLabel = isMac ? "\u2318\u21e7H" : "Ctrl+Shift+H";
+
     const panel = document.createElement("div");
     panel.className = "honeydew-panel theme-" + currentTheme;
     panel.innerHTML = `
@@ -674,39 +597,60 @@
         <div class="panel-header-left">
           <span class="panel-header-icon">${ICONS.honeydew}</span>
           <span class="panel-title" id="panel-title">Honeydew</span>
+          <span class="remaining-badge" id="remaining-badge" style="display:none"></span>
         </div>
         <div class="panel-header-right">
+          <button class="edit-context" id="panel-edit-ctx" title="Edit your info">edit</button>
           <button class="panel-cancel" id="panel-cancel" style="display:none">${ICONS.stop}</button>
           <button class="panel-close" id="panel-close">${ICONS.close}</button>
         </div>
       </div>
       <div class="panel-body" id="panel-body">
-        <div class="idle-msg">Open a DM or visit a profile to start researching</div>
+        <div class="idle-msg">Navigate to a profile, then press <kbd>${shortcutLabel}</kbd></div>
       </div>
     `;
     panelShadow.appendChild(panel);
 
-    panelShadow.getElementById("panel-close").addEventListener("click", hidePanel);
+    // Toast element for share feedback
+    const toast = document.createElement("div");
+    toast.className = "toast";
+    toast.id = "honeydew-toast";
+    panelShadow.appendChild(toast);
+
+    panelShadow.getElementById("panel-close").addEventListener("click", deactivateCommandMode);
     panelShadow.getElementById("panel-cancel").addEventListener("click", cancelResearch);
+    panelShadow.getElementById("panel-edit-ctx").addEventListener("click", () => {
+      if (isResearching) cancelResearch();
+      showOnboardingForm(userContext);
+    });
     initDrag(panel, panelShadow.getElementById("panel-drag-handle"));
   }
 
   function showPanel() {
     createPanel();
     const panel = panelShadow.querySelector(".honeydew-panel");
-    requestAnimationFrame(() => panel.classList.add("visible"));
+    const overlay = panelShadow.getElementById("honeydew-overlay");
+
+    // Reset to centered position (undo any drag)
+    panel.style.transform = "";
+    panel.style.left = "";
+    panel.style.top = "";
+
+    requestAnimationFrame(() => {
+      overlay.classList.add("visible");
+      panel.classList.add("visible");
+    });
     panelVisible = true;
-    if (dockShadow) dockShadow.getElementById("dock-honeydew").classList.add("active");
   }
 
   function hidePanel() {
     if (!panelShadow) return;
-    panelShadow.querySelector(".honeydew-panel").classList.remove("visible");
+    const panel = panelShadow.querySelector(".honeydew-panel");
+    const overlay = panelShadow.getElementById("honeydew-overlay");
+    if (panel) panel.classList.remove("visible");
+    if (overlay) overlay.classList.remove("visible");
     panelVisible = false;
-    if (dockShadow) dockShadow.getElementById("dock-honeydew").classList.remove("active");
   }
-
-  function togglePanel() { panelVisible ? hidePanel() : showPanel(); }
 
   function setPanelTitle(text) {
     if (!panelShadow) return;
@@ -720,18 +664,172 @@
     if (el) el.innerHTML = html;
   }
 
+  function showToast(message) {
+    if (!panelShadow) return;
+    const toast = panelShadow.getElementById("honeydew-toast");
+    if (!toast) return;
+    toast.textContent = message;
+    toast.classList.add("visible");
+    setTimeout(() => toast.classList.remove("visible"), 2000);
+  }
+
+  // ==========================================
+  // COMMAND MODE
+  // ==========================================
+  async function activateCommandMode() {
+    showPanel();
+
+    // Fetch remaining in background
+    fetchRemaining().then(() => updateRemainingBadge());
+
+    // Load user context from storage if not cached
+    if (!userContext) {
+      const data = await chrome.storage.local.get(["honeydewUserContext"]);
+      if (data.honeydewUserContext) {
+        userContext = data.honeydewUserContext;
+      }
+    }
+
+    // If no saved context, show onboarding form first
+    if (!userContext) {
+      showOnboardingForm();
+      return;
+    }
+
+    const recipient = getNameFromPage();
+    if (recipient) {
+      startResearch(recipient);
+    } else {
+      setPanelTitle("Honeydew");
+      setPanelBody('<div class="idle-msg">Navigate to a LinkedIn profile or conversation first</div>');
+    }
+  }
+
+  function showOnboardingForm(prefill) {
+    setPanelTitle("Honeydew");
+    const targetVal = prefill ? escapeHtml(prefill.targetRole) : "";
+    const expVal = prefill ? escapeHtml(prefill.experience) : "";
+    setPanelBody(`
+      <div class="onboarding">
+        <h3 class="onboarding-heading">Quick setup</h3>
+        <p class="onboarding-sub">Tell us a bit about your search so we can personalize your DMs.</p>
+        <div class="onboarding-field">
+          <label class="onboarding-label">What role or company are you targeting?</label>
+          <input class="onboarding-input" id="onb-target" type="text" placeholder="e.g. Senior Frontend Engineer at Stripe" value="${targetVal}" />
+        </div>
+        <div class="onboarding-field">
+          <label class="onboarding-label">What experience do you have for this?</label>
+          <input class="onboarding-input" id="onb-experience" type="text" placeholder="e.g. 4 yrs React/TypeScript, built payments UI at Shopify" value="${expVal}" />
+        </div>
+        <button class="onboarding-btn" id="onb-save">Start researching</button>
+      </div>
+    `);
+
+    const saveBtn = panelShadow.getElementById("onb-save");
+    const targetInput = panelShadow.getElementById("onb-target");
+    const expInput = panelShadow.getElementById("onb-experience");
+
+    // Focus first field
+    setTimeout(() => targetInput && targetInput.focus(), 100);
+
+    // Enter key moves to next field / submits
+    targetInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); expInput.focus(); }
+    });
+    expInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); saveBtn.click(); }
+    });
+
+    saveBtn.addEventListener("click", () => {
+      const targetRole = targetInput.value.trim();
+      const experience = expInput.value.trim();
+      if (!targetRole || !experience) return;
+
+      userContext = { targetRole, experience };
+      chrome.storage.local.set({ honeydewUserContext: userContext });
+
+      // Now proceed to research
+      const recipient = getNameFromPage();
+      if (recipient) {
+        startResearch(recipient);
+      } else {
+        setPanelBody('<div class="idle-msg">Navigate to a LinkedIn profile or conversation first</div>');
+      }
+    });
+  }
+
+  function deactivateCommandMode() {
+    if (isResearching) cancelResearch();
+    hidePanel();
+  }
+
+  function toggleCommandMode() {
+    panelVisible ? deactivateCommandMode() : activateCommandMode();
+  }
+
+  // ==========================================
+  // LIMIT REACHED UI
+  // ==========================================
+  function showLimitReachedUI() {
+    setPanelTitle("Honeydew");
+    setPanelBody(`
+      <div class="limit-msg">
+        <h3>You've used all 3 free researches</h3>
+        <p>Join the waitlist for unlimited access when we launch.</p>
+        <div class="waitlist-capture">
+          <div class="waitlist-capture-row">
+            <input type="email" id="limit-email" placeholder="your@email.com" />
+            <button id="limit-waitlist-btn">Get Early Access</button>
+          </div>
+        </div>
+      </div>
+    `);
+
+    const emailInput = panelShadow.getElementById("limit-email");
+    const btn = panelShadow.getElementById("limit-waitlist-btn");
+    setTimeout(() => emailInput && emailInput.focus(), 100);
+
+    emailInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); btn.click(); }
+    });
+
+    btn.addEventListener("click", async () => {
+      const email = emailInput.value.trim();
+      if (!email || !email.includes("@")) return;
+      btn.textContent = "Sending...";
+      btn.disabled = true;
+      try {
+        const fingerprint = await getFingerprint();
+        await fetch(`${API_BASE}/api/waitlist`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, fingerprint }),
+        });
+        const capture = panelShadow.querySelector(".waitlist-capture");
+        if (capture) capture.innerHTML = '<span class="waitlist-success">You\'re on the list! We\'ll reach out soon.</span>';
+      } catch {
+        btn.textContent = "Try again";
+        btn.disabled = false;
+      }
+    });
+  }
+
   // ==========================================
   // DRAG
   // ==========================================
   function initDrag(panel, handle) {
     handle.addEventListener("mousedown", (e) => {
-      if (e.target.closest(".panel-close")) return;
+      if (e.target.closest(".panel-close") || e.target.closest(".panel-cancel")) return;
       isDragging = true;
       const rect = panel.getBoundingClientRect();
       dragStartX = e.clientX;
       dragStartY = e.clientY;
       panelStartX = rect.left;
       panelStartY = rect.top;
+      // Switch from centered transform to absolute positioning on drag
+      panel.style.transform = "none";
+      panel.style.left = rect.left + "px";
+      panel.style.top = rect.top + "px";
       e.preventDefault();
     });
     window.addEventListener("mousemove", (e) => {
@@ -743,244 +841,108 @@
   }
 
   // ==========================================
-  // RESEARCH ENGINE
+  // RESEARCH ENGINE (server proxy)
   // ==========================================
-  const COMMON_NAMES = new Set([
-    "michael chapman", "john smith", "james johnson", "robert williams",
-    "david brown", "michael jones", "james miller", "robert davis",
-    "michael wilson", "john taylor", "james anderson", "robert thomas",
-    "david jackson", "michael white", "john harris", "james martin",
-    "robert thompson", "david garcia", "michael martinez", "john robinson",
-    "james clark", "robert rodriguez", "david lewis", "michael lee",
-    "john walker", "james hall", "robert allen", "david young",
-    "michael hernandez", "john king", "james wright", "robert lopez",
-    "david hill", "michael scott", "john green", "james adams",
-    "robert baker", "david gonzalez", "michael nelson", "john carter",
-    "james mitchell", "robert perez", "david roberts", "michael turner",
-    "john phillips", "james campbell", "robert parker", "david evans",
-    "michael edwards", "john collins", "james stewart", "robert sanchez",
-    "david morris", "michael rogers", "john reed", "james cook",
-    "robert morgan", "david bell", "michael murphy", "john bailey",
-    "james rivera", "robert cooper", "david richardson", "michael cox",
-    "john howard", "james ward", "robert torres", "david peterson",
-    "michael gray", "john ramirez", "james james", "robert watson",
-    "david brooks", "michael kelly", "john sanders", "james price",
-    "robert bennett", "david wood", "michael barnes", "john ross",
-    "james henderson", "robert coleman", "david jenkins", "michael perry",
-    "john powell", "james long", "robert patterson", "david hughes",
-    "michael flores", "john washington", "james butler", "robert simmons",
-    "david foster", "michael gonzales", "john bryant", "james alexander",
-    "robert russell", "david griffin", "michael diaz", "john hayes",
-  ]);
-
-  function isCommonName(name) {
-    return COMMON_NAMES.has(name.toLowerCase().trim());
-  }
-
-  async function tavilySearch(query, apiKey, signal) {
-    const response = await fetch("https://api.tavily.com/search", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        api_key: apiKey,
-        query,
-        search_depth: "basic",
-        max_results: 5,
-      }),
-      signal,
-    });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`Tavily error: ${response.status}`);
-    }
-
-    const json = await response.json();
-    return json.results || [];
-  }
-
-  async function streamClaude(name, title, company, searchResults, apiKey, onToken, signal) {
-    const resultsText = searchResults
-      .map((r, i) => `[Result ${i + 1}] (relevance: ${r.score || 0})\nTitle: ${r.title}\nURL: ${r.url}\nContent: ${r.content || "N/A"}`)
-      .join("\n\n---\n\n");
-
-    const titleStr = title ? `, ${title}` : "";
-    const companyStr = company ? ` at ${company}` : "";
-
-    const prompt = `You are Honeydew — a cold DM research assistant for job seekers. I'm about to message ${name}${titleStr}${companyStr} on LinkedIn and I need ACTIONABLE intel to write a killer personalized cold DM.
-
-Here is what we found about them online (results are ranked by relevance to this specific person):
-
-${resultsText}
-
-Give me a fast research brief I can scan in 10 seconds. Use these EXACT section headers (ALL CAPS, each on its own line):
-
-WHO THEY ARE
-[1 sentence max. What do they actually DO — not their job title, but what they're known for or working on right now.]
-
-DM HOOKS
-• [Something specific they did/built/wrote that I can reference in my opening line]
-• [A recent win, project, or milestone I can congratulate them on]
-• [A shared interest or angle I could use to build rapport]
-• [An opinion they expressed publicly that I could reference]
-[Give me 3-5 hooks. Each must be SPECIFIC — name the project, article, company, or event. "They have experience in tech" is useless. "They built the recommendation engine at Spotify" is gold.]
-
-COLD DM
-[Write me a ready-to-send cold DM. MAX 200 CHARACTERS — this is a hard limit, count carefully. 1-2 sentences. Reference ONE specific hook from above. Sound like a real person, not a salesperson. No fluff.]
-
-Rules:
-- NEVER refuse, ask clarifying questions, or say you can't identify the person. ALWAYS pick the most likely match from the search results and go with it.
-- ALWAYS use the exact 3 section headers above (WHO THEY ARE, DM HOOKS, COLD DM). No other format. No preamble before WHO THEY ARE.
-- Every hook must name a SPECIFIC thing (project name, article title, event, company, metric)
-- No generic filler like "extensive experience" or "passionate about innovation"
-- No URLs or links — I just need the facts
-- If the search results are thin, work with what you have — some intel is better than none
-- Write like a sharp friend briefing me before a networking event`;
-
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`,
-        "HTTP-Referer": "chrome-extension://honeydew",
-        "X-Title": "Honeydew",
-      },
-      body: JSON.stringify({
-        model: "anthropic/claude-sonnet-4",
-        max_tokens: 1024,
-        stream: true,
-        messages: [{ role: "user", content: prompt }],
-      }),
-      signal,
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`OpenRouter error: ${response.status}`);
-    }
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = "";
-    let fullText = "";
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split("\n");
-      buffer = lines.pop() || "";
-
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed || !trimmed.startsWith("data: ")) continue;
-        const payload = trimmed.slice(6);
-        if (payload === "[DONE]") continue;
-
-        try {
-          const json = JSON.parse(payload);
-          const delta = json.choices?.[0]?.delta?.content || "";
-          if (delta) {
-            fullText += delta;
-            onToken(delta);
-          }
-        } catch (e) { /* skip malformed */ }
-      }
-    }
-
-    return fullText;
-  }
-
   async function runResearch(name, title, company) {
     abortController = new AbortController();
     const signal = abortController.signal;
 
-    const data = await chrome.storage.local.get(["tavilyApiKey", "openrouterApiKey", "honeydewEnabled"]);
+    const fingerprint = await getFingerprint();
 
-    if (data.honeydewEnabled === false) return { error: "Honeydew is disabled in settings" };
-    if (!data.tavilyApiKey || !data.openrouterApiKey) return { error: "Set your API keys in Honeydew settings (click gear icon in dock)" };
-
-    const contextParts = [company, title].filter(Boolean);
-    const nameParts = name.trim().split(/\s+/);
-    const firstName = nameParts[0] || "";
-    const lastName = nameParts[nameParts.length - 1] || "";
-    const contextStr = contextParts.join(" ");
-
-    const queries = [];
-    if (contextParts.length > 0) {
-      queries.push(`${name} ${contextStr} LinkedIn profile`.trim());
-    } else {
-      queries.push(`${name} LinkedIn profile`.trim());
-    }
-    queries.push(`${name} ${contextStr} work OR projects OR portfolio`.trim());
-    queries.push(`${name} ${contextStr} news OR interview OR podcast`.trim());
-    if (isCommonName(name)) {
-      queries.push(`"${firstName} ${lastName}" ${contextStr} professional background`.trim());
-    }
-    queries.push(`site:linkedin.com/in "${name}" ${contextStr}`.trim());
-
-    const searchLabels = [
-      "Searching LinkedIn presence",
-      "Looking for work & projects",
-      "Checking recent news",
-      isCommonName(name) ? "Disambiguating common name" : "Cross-referencing",
-      "Deep LinkedIn search",
-    ].slice(0, queries.length);
-
-    showSearchProgress(searchLabels);
-
-    const allResults = [];
-    const searchPromises = queries.map(async (query, index) => {
-      try {
-        const results = await tavilySearch(query, data.tavilyApiKey, signal);
-        allResults[index] = results;
-        updateSearchStatus(index, results.length, "done");
-        return results;
-      } catch (err) {
-        if (signal.aborted) throw err;
-        allResults[index] = [];
-        updateSearchStatus(index, 0, "failed");
-        return [];
+    // Ensure user context is loaded
+    if (!userContext) {
+      const data = await chrome.storage.local.get(["honeydewUserContext"]);
+      if (data.honeydewUserContext) {
+        userContext = data.honeydewUserContext;
       }
+    }
+
+    // Show initial searching state
+    showSearchProgress(["Searching LinkedIn presence", "Looking for work & projects", "Checking recent news", "Cross-referencing"]);
+
+    const response = await fetch(`${API_BASE}/api/research`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fingerprint,
+        name,
+        title,
+        company,
+        userContext,
+      }),
+      signal,
     });
 
-    await Promise.all(searchPromises);
+    // Handle limit reached
+    if (response.status === 429) {
+      remainingGenerations = 0;
+      updateRemainingBadge();
+      return { limitReached: true };
+    }
 
-    const flatResults = allResults.flat();
-    if (flatResults.length === 0) return { noResults: true, name };
-
-    const scoredResults = flatResults.map((r) => {
-      const text = ((r.title || "") + " " + (r.content || "") + " " + (r.url || "")).toLowerCase();
-      let score = 0;
-      if (text.includes(name.toLowerCase())) score += 10;
-      if (firstName && text.includes(firstName.toLowerCase())) score += 3;
-      if (lastName && text.includes(lastName.toLowerCase())) score += 3;
-      for (const part of contextParts) {
-        if (text.includes(part.toLowerCase())) score += 5;
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      if (err.error === "no_results") {
+        return { noResults: true, name };
       }
-      if (r.url && r.url.includes("linkedin.com/in/")) score += 4;
-      return { ...r, score };
-    });
+      return { error: err.error || "Server error" };
+    }
 
-    scoredResults.sort((a, b) => b.score - a.score);
-    const topResults = scoredResults.filter((r) => r.score >= 3).slice(0, 12);
+    // Check if it's a JSON response (no_results) vs SSE stream
+    const contentType = response.headers.get("Content-Type") || "";
+    if (contentType.includes("application/json")) {
+      const data = await response.json();
+      if (data.error === "no_results") {
+        return { noResults: true, name };
+      }
+      return { error: data.error || "Unknown error" };
+    }
 
-    if (topResults.length === 0) return { noResults: true, name };
+    // Parse SSE stream
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let gotSearchEvent = false;
 
     showStreamingUI();
 
     try {
-      const fullText = await streamClaude(
-        name, title, company, topResults, data.openrouterApiKey,
-        (token) => appendStreamToken(token),
-        signal
-      );
-      return { done: true, fullText };
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || !trimmed.startsWith("data: ")) continue;
+          const payload = trimmed.slice(6);
+
+          try {
+            const event = JSON.parse(payload);
+
+            if (event.type === "search") {
+              gotSearchEvent = true;
+              // Already showing streaming UI at this point
+            } else if (event.type === "token") {
+              appendStreamToken(event.content);
+            } else if (event.type === "done") {
+              remainingGenerations = event.remaining;
+              updateRemainingBadge();
+            } else if (event.type === "error") {
+              return { error: event.message || "Stream error" };
+            }
+          } catch { /* skip malformed */ }
+        }
+      }
     } catch (err) {
       if (signal.aborted) return { cancelled: true };
-      return { error: "Claude analysis failed: " + err.message };
+      return { error: "Stream interrupted: " + err.message };
     }
+
+    return { done: true, fullText: streamedText };
   }
 
   // ==========================================
@@ -997,22 +959,12 @@ Rules:
     setPanelBody(html);
   }
 
-  function updateSearchStatus(index, count, state) {
-    if (!panelShadow) return;
-    const line = panelShadow.getElementById("search-" + index);
-    if (!line) return;
-    const dot = line.querySelector(".search-dot");
-    const status = line.querySelector(".search-status");
-    if (dot) dot.className = "search-dot " + state;
-    if (status) status.textContent = state === "done" ? count + " found" : "skipped";
-  }
-
   function showStreamingUI() {
     setPanelBody('<div class="stream-content" id="stream-text"><span class="stream-cursor"></span></div>');
   }
 
   // ==========================================
-  // SMOOTH STREAMING — persistent DOM, zero innerHTML flicker
+  // SMOOTH STREAMING
   // ==========================================
   function initStreamState(container) {
     streamState = {
@@ -1060,7 +1012,6 @@ Rules:
     const dmContent = dmMatch ? dmMatch[1].trim() : "";
     const hasAnySection = whoMatch || hooksMatch || dmMatch;
 
-    // Phase 1: raw text before sections
     if (!hasAnySection) {
       if (!s.rawEl) {
         container.innerHTML = "";
@@ -1077,13 +1028,10 @@ Rules:
       return;
     }
 
-    // Transition: remove raw element
     if (s.rawEl) {
       s.rawEl.remove();
       s.rawEl = null;
     }
-
-    // Phase 2: structured sections — create nodes once, only update textContent
 
     // COLD DM (insert at top)
     if (dmContent && !s.dmSection) {
@@ -1099,6 +1047,10 @@ Rules:
       copyBtn.id = "dm-copy-btn";
       copyBtn.innerHTML = ICONS.copy + " Copy DM";
       copyRow.appendChild(copyBtn);
+      const shareBtn = makeEl("button", "dm-share-btn");
+      shareBtn.id = "dm-share-btn";
+      shareBtn.innerHTML = ICONS.share + " Share";
+      copyRow.appendChild(shareBtn);
       s.dmSection.appendChild(copyRow);
       container.insertBefore(s.dmSection, container.firstChild);
     }
@@ -1135,7 +1087,7 @@ Rules:
 
       for (let i = 0; i < lines.length; i++) {
         const trimmed = lines[i].trim();
-        const bulletMatch = trimmed.match(/^[\u2022•\-\*]\s*(.*)/);
+        const bulletMatch = trimmed.match(/^[\u2022\u2023\-\*]\s*(.*)/);
         const text = bulletMatch ? bulletMatch[1] : trimmed;
 
         if (i < existing) {
@@ -1154,7 +1106,6 @@ Rules:
       }
     }
 
-    // Cursor
     if (!s.cursor) {
       s.cursor = makeEl("span", "stream-cursor");
       container.appendChild(s.cursor);
@@ -1185,6 +1136,7 @@ Rules:
     const match = fullText.match(/COLD DM\n([\s\S]*?)$/);
     if (match) suggestedOpener = match[1].trim();
 
+    // Copy DM button
     const copyBtn = panelShadow.getElementById("dm-copy-btn");
     if (copyBtn && suggestedOpener) {
       copyBtn.addEventListener("click", () => {
@@ -1199,10 +1151,72 @@ Rules:
       });
     }
 
-    setDockLoading(false);
+    // Share button
+    const shareBtn = panelShadow.getElementById("dm-share-btn");
+    if (shareBtn) {
+      shareBtn.addEventListener("click", () => {
+        navigator.clipboard.writeText("https://tryhoney.xyz?ref=share").then(() => {
+          shareBtn.innerHTML = `${ICONS.check} Copied!`;
+          shareBtn.classList.add("copied");
+          showToast("Link copied! Share it with a friend");
+          setTimeout(() => {
+            shareBtn.innerHTML = `${ICONS.share} Share`;
+            shareBtn.classList.remove("copied");
+          }, 1500);
+        });
+      });
+    }
+
+    // Show waitlist capture if low on remaining
+    if (remainingGenerations !== null && remainingGenerations <= 1) {
+      showWaitlistCapture();
+    }
+
     showCancelButton(false);
     isResearching = false;
     streamState = null;
+  }
+
+  function showWaitlistCapture() {
+    if (!panelShadow) return;
+    const body = panelShadow.getElementById("panel-body");
+    if (!body) return;
+
+    const capture = makeEl("div", "waitlist-capture");
+    capture.innerHTML = `
+      <p>Want more? Join the waitlist for unlimited access</p>
+      <div class="waitlist-capture-row">
+        <input type="email" id="wl-email" placeholder="your@email.com" />
+        <button id="wl-submit-btn">Get Early Access</button>
+      </div>
+    `;
+    body.appendChild(capture);
+
+    const emailInput = panelShadow.getElementById("wl-email");
+    const submitBtn = panelShadow.getElementById("wl-submit-btn");
+
+    emailInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); submitBtn.click(); }
+    });
+
+    submitBtn.addEventListener("click", async () => {
+      const email = emailInput.value.trim();
+      if (!email || !email.includes("@")) return;
+      submitBtn.textContent = "Sending...";
+      submitBtn.disabled = true;
+      try {
+        const fingerprint = await getFingerprint();
+        await fetch(`${API_BASE}/api/waitlist`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, fingerprint }),
+        });
+        capture.innerHTML = '<span class="waitlist-success">You\'re on the list! We\'ll reach out soon.</span>';
+      } catch {
+        submitBtn.textContent = "Try again";
+        submitBtn.disabled = false;
+      }
+    });
   }
 
   function showCancelButton(show) {
@@ -1219,8 +1233,6 @@ Rules:
     suggestedOpener = "";
     renderPending = false;
     streamState = null;
-    setDockLoading(false);
-    setDockPulsing(false);
     showCancelButton(false);
     setPanelTitle("Honeydew");
     setPanelBody('<div class="idle-msg">Research cancelled</div>');
@@ -1233,9 +1245,8 @@ Rules:
     if (isResearching && name === currentName) return;
 
     if (!looksLikePersonName(name)) {
-      showPanel();
       setPanelTitle("Honeydew");
-      setPanelBody('<div class="idle-msg">No one found on this page</div>');
+      setPanelBody('<div class="idle-msg">Navigate to a LinkedIn profile or conversation first</div>');
       return;
     }
 
@@ -1247,23 +1258,22 @@ Rules:
     renderPending = false;
     streamState = null;
 
-    showPanel();
     setPanelTitle("Researching " + name);
-    setDockLoading(true);
-    setDockPulsing(false);
     showCancelButton(true);
     setPanelBody('<div class="search-line"><span class="search-dot active"></span><span>Starting research...</span></div>');
 
     runResearch(name, title, company).then((result) => {
       if (!isResearching) return;
 
-      if (result.error) {
-        setDockLoading(false);
+      if (result.limitReached) {
+        showCancelButton(false);
+        isResearching = false;
+        showLimitReachedUI();
+      } else if (result.error) {
         showCancelButton(false);
         isResearching = false;
         setPanelBody(`<div class="error-msg">${escapeHtml(result.error)}</div>`);
       } else if (result.noResults) {
-        setDockLoading(false);
         showCancelButton(false);
         isResearching = false;
         setPanelBody(`<div class="idle-msg">No public info found for ${escapeHtml(result.name)}</div>`);
@@ -1275,7 +1285,6 @@ Rules:
       }
     }).catch((err) => {
       if (!isResearching) return;
-      setDockLoading(false);
       showCancelButton(false);
       isResearching = false;
       setPanelBody(`<div class="error-msg">Research failed: ${escapeHtml(err.message)}</div>`);
@@ -1283,52 +1292,20 @@ Rules:
   }
 
   // ==========================================
-  // INIT
+  // INIT — hotkey only, zero persistent UI
   // ==========================================
   console.log("[Honeydew] Content script loaded on", window.location.href);
 
-  createDock();
-
-  setInterval(applyTheme, 3000);
-
-  function checkForRecipient() {
-    if (!isMessagingPage() && !isProfilePage()) return;
-    const url = window.location.href;
-    const title = document.title;
-    if (url === lastCheckedUrl && title === lastCheckedTitle) return;
-    lastCheckedUrl = url;
-    lastCheckedTitle = title;
-
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => {
-      const recipient = detectRecipient();
-      if (!recipient) {
-        if (panelVisible) {
-          setPanelTitle("Honeydew");
-          setPanelBody('<div class="idle-msg">No one found on this page</div>');
-        }
-        return;
-      }
-      if (recipient.name === lastResearchedName) return;
-      setDockPulsing(true);
-      if (isMessagingPage()) {
-        startResearch(recipient);
-      } else {
-        currentName = recipient.name;
-        currentRecipient = recipient;
-      }
-    }, 1000);
-  }
-
-  setTimeout(checkForRecipient, 1500);
-
-  const observer = new MutationObserver(() => {
-    if (!document.getElementById("honeydew-dock-root")) {
-      dockRoot = null;
-      dockShadow = null;
-      createDock();
+  // Hotkey: Cmd+Shift+H (Mac) / Ctrl+Shift+H (Win/Linux)
+  document.addEventListener("keydown", (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === "h" || e.key === "H")) {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleCommandMode();
     }
-    checkForRecipient();
+    if (e.key === "Escape" && panelVisible) {
+      e.preventDefault();
+      deactivateCommandMode();
+    }
   });
-  observer.observe(document.body, { childList: true, subtree: true });
 })();
