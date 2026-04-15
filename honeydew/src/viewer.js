@@ -1,7 +1,7 @@
 import fs from "node:fs";
 
 import { renderFrame } from "./renderer.js";
-import { getForestFile, readForest } from "./state.js";
+import { getForestFile, readForest, writeForest } from "./state.js";
 
 function writeAnsi(code) {
   process.stdout.write(code);
@@ -63,6 +63,16 @@ export async function viewer() {
     process.exit(1);
   }
 
+  // Save terminal width so plant knows how wide to spread trees
+  function syncWidth() {
+    const cols = process.stdout.columns || 80;
+    if (forest.viewerWidth !== cols) {
+      forest.viewerWidth = cols;
+      writeForest(forest);
+    }
+  }
+
+  syncWidth();
   hideCursor();
   clearScreen();
   renderForest(forest);
@@ -81,6 +91,7 @@ export async function viewer() {
   process.on("SIGINT", cleanup);
   process.on("SIGTERM", cleanup);
   process.stdout.on("resize", () => {
+    syncWidth();
     clearScreen();
     renderForest(forest);
   });

@@ -1,8 +1,14 @@
 import { getSprite, TREE_TYPES } from "./sprites.js";
 import { createEmptyForest, readForest, writeForest } from "./state.js";
 
-const DEFAULT_WIDTH = 80;
 const MIN_GAP = 2;
+const DEFAULT_WIDTH = 80;
+
+function getPlantWidth(forest) {
+  // Use the width saved by the viewer, fall back to default
+  if (forest.viewerWidth && forest.viewerWidth > 40) return forest.viewerWidth;
+  return DEFAULT_WIDTH;
+}
 
 function randomItem(items) {
   return items[Math.floor(Math.random() * items.length)];
@@ -20,7 +26,7 @@ function occupiedRanges(trees) {
   });
 }
 
-function findOpenX(trees, type, growth) {
+function findOpenX(trees, type, growth, width) {
   const sprite = getSprite(type, growth);
   const half = Math.floor(sprite.width / 2);
   const margin = half + 1;
@@ -28,7 +34,7 @@ function findOpenX(trees, type, growth) {
 
   for (let attempt = 0; attempt < 100; attempt += 1) {
     const x =
-      margin + Math.floor(Math.random() * Math.max(1, DEFAULT_WIDTH - margin * 2));
+      margin + Math.floor(Math.random() * Math.max(1, width - margin * 2));
     const left = x - half;
     const right = x + half;
     const collides = ranges.some(
@@ -38,7 +44,7 @@ function findOpenX(trees, type, growth) {
     if (!collides) return x;
   }
 
-  return margin + Math.floor(Math.random() * Math.max(1, DEFAULT_WIDTH - margin * 2));
+  return margin + Math.floor(Math.random() * Math.max(1, width - margin * 2));
 }
 
 function nudgeGrowth(growth) {
@@ -49,6 +55,7 @@ function nudgeGrowth(growth) {
 
 export async function plant() {
   const forest = readForest() ?? createEmptyForest();
+  const width = getPlantWidth(forest);
 
   for (const tree of forest.trees) {
     tree.growth = nudgeGrowth(tree.growth);
@@ -62,7 +69,7 @@ export async function plant() {
     id: nextId,
     type,
     growth,
-    x: findOpenX(forest.trees, type, growth),
+    x: findOpenX(forest.trees, type, growth, width),
     plantedAt: new Date().toISOString(),
   });
   forest.totalPrompts += 1;
