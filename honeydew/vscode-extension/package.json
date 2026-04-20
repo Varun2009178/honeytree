@@ -1,0 +1,57 @@
+{
+  "name": "honeytree",
+  "displayName": "Honeytree",
+  "description": "Grow a forest every time your AI coding tool generates code",
+  "version": "0.1.0",
+  "publisher": "varunnukala",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "honeytree.plant",
+        "title": "Honeytree: Plant Tree"
+      }
+    ],
+    "configuration": {
+      "title": "Honeytree",
+      "properties": {
+        "honeytree.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Honeytree"
+        },
+        "honeytree.autoDetect": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically detect AI-generated code insertions"
+        },
+        "honeytree.minLines": {
+          "type": "number",
+          "default": 3,
+          "minimum": 2,
+          "description": "Minimum number of inserted lines to count as an AI completion"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc",
+    "watch": "tsc -watch"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.5.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Varun2009178/honeytree.git"
+  },
+  "author": "Varun Nukala",
+  "license": "MIT"
+}

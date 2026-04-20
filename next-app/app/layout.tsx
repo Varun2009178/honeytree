@@ -9,6 +9,20 @@ export const metadata: Metadata = {
   icons: {
     icon: "/icon.svg",
   },
+  openGraph: {
+    title: "Honeytree | Grow a Forest with Claude Code",
+    description:
+      "A CLI that plants pixel-art trees in your terminal every time you use Claude Code. Watch your forest grow as you build.",
+    siteName: "Honeytree",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "Honeytree | Grow a Forest with Claude Code",
+    description:
+      "A CLI that plants pixel-art trees in your terminal every time you use Claude Code.",
+  },
+  metadataBase: new URL("https://tryhoney.xyz"),
 }
 
 export default function RootLayout({
@@ -22,7 +36,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@400;500&display=swap"
+          href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@400;500;600&display=swap"
           rel="stylesheet"
         />
       </head>

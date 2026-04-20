@@ -37,11 +37,26 @@ export async function init() {
   const honeydewDir = getHoneydewDir();
   fs.mkdirSync(honeydewDir, { recursive: true });
 
-  if (!readForest()) {
+  const existing = readForest();
+  if (!existing) {
     writeForest(createEmptyForest());
     console.log(`Created ${path.join(honeydewDir, "forest.json")}`);
   } else {
-    console.log(`Forest already exists at ${path.join(honeydewDir, "forest.json")}`);
+    let migrated = false;
+    if (existing.lastActiveDate === undefined) {
+      existing.lastActiveDate = new Date().toISOString().slice(0, 10);
+      migrated = true;
+    }
+    if (existing.streak === undefined) {
+      existing.streak = 0;
+      migrated = true;
+    }
+    if (migrated) {
+      writeForest(existing);
+      console.log(`Updated forest with streak tracking (${existing.trees.length} trees kept)`);
+    } else {
+      console.log(`Forest already up to date at ${path.join(honeydewDir, "forest.json")}`);
+    }
   }
 
   const settingsPath = getClaudeSettingsPath();

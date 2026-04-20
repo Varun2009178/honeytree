@@ -1,6 +1,6 @@
 {
   "name": "honeytree",
-  "version": "1.0.1",
+  "version": "1.0.6",
   "description": "Grow a forest in your terminal every time you use Claude Code",
   "type": "module",
   "bin": {

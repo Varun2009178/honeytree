@@ -27,6 +27,8 @@ export function createEmptyForest() {
     trees: [],
     totalPrompts: 0,
     createdAt: new Date().toISOString(),
+    lastActiveDate: new Date().toISOString().slice(0, 10),
+    streak: 0,
   };
 }
 
