@@ -64,10 +64,12 @@ export async function viewer() {
   }
 
   // Save terminal width so plant knows how wide to spread trees
+  let ignoreNextChange = false;
   function syncWidth() {
     const cols = process.stdout.columns || 80;
     if (forest.viewerWidth !== cols) {
       forest.viewerWidth = cols;
+      ignoreNextChange = true;
       writeForest(forest);
     }
   }
@@ -78,6 +80,8 @@ export async function viewer() {
   renderForest(forest);
 
   let lastMaxId = forest.trees.reduce((max, tree) => Math.max(max, tree.id), 0);
+  let lastTotalPrompts = forest.totalPrompts;
+  let animating = false;
 
   const cleanup = () => {
     showCursor();
@@ -96,21 +100,70 @@ export async function viewer() {
     renderForest(forest);
   });
 
-  let debounceTimer;
-  fs.watch(forestFile, () => {
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(async () => {
-      const updated = readForest();
-      if (!updated) return;
+  // Check for changes — used by both fs.watch and polling fallback
+  async function checkForUpdates() {
+    if (animating) return;
 
-      const nextMaxId = updated.trees.reduce((max, tree) => Math.max(max, tree.id), 0);
-      forest = updated;
-      if (nextMaxId > lastMaxId) {
-        lastMaxId = nextMaxId;
-        await animateNewTree(forest, nextMaxId);
-      } else {
-        renderForest(forest);
+    if (ignoreNextChange) {
+      ignoreNextChange = false;
+      return;
+    }
+
+    const updated = readForest();
+    if (!updated) return;
+
+    // Only re-render if something actually changed
+    if (updated.totalPrompts === lastTotalPrompts) return;
+
+    const nextMaxId = updated.trees.reduce((max, tree) => Math.max(max, tree.id), 0);
+    forest = updated;
+    lastTotalPrompts = forest.totalPrompts;
+
+    if (nextMaxId > lastMaxId) {
+      lastMaxId = nextMaxId;
+      animating = true;
+      await animateNewTree(forest, nextMaxId);
+      animating = false;
+    } else {
+      renderForest(forest);
+    }
+  }
+
+  // fs.watch can drop events on macOS after atomic renames, so
+  // use it for fast response but also poll as a reliable fallback
+  function startWatcher() {
+    try {
+      const watcher = fs.watch(forestFile, () => {
+        checkForUpdates();
+      });
+      watcher.on("error", () => {});
+      return watcher;
+    } catch {
+      return null;
+    }
+  }
+
+  let watcher = startWatcher();
+
+  // Poll every 800ms as fallback — cheap since it only reads if mtime changed
+  let lastMtime = 0;
+  try {
+    lastMtime = fs.statSync(forestFile).mtimeMs;
+  } catch {}
+
+  setInterval(() => {
+    try {
+      const mtime = fs.statSync(forestFile).mtimeMs;
+      if (mtime !== lastMtime) {
+        lastMtime = mtime;
+        checkForUpdates();
+
+        // Re-establish watcher in case rename killed it
+        if (watcher) {
+          try { watcher.close(); } catch {}
+        }
+        watcher = startWatcher();
       }
-    }, 100);
-  });
+    } catch {}
+  }, 800);
 }
