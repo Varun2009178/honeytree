@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { renderFrame, SCENE_HEIGHT } from "../src/renderer.js";
+import { getVirtualWidth } from "../src/plant.js";
 
 const EMPTY_FOREST = {
   trees: [],
@@ -48,5 +49,31 @@ describe("renderer", () => {
   it("has the correct scene height (sky + trees + ground + spacer + stats + cta)", () => {
     // 4 sky + 10 trees + 2 ground + 1 spacer + 1 stats + 1 cta = 19
     assert.equal(SCENE_HEIGHT, 19);
+  });
+});
+
+describe("viewport rendering", () => {
+  it("renders a viewport slice of a wider virtual canvas", () => {
+    const forest = {
+      ...EMPTY_FOREST,
+      trees: [
+        { id: 1, type: "oak", growth: 1, x: 200, plantedAt: EMPTY_FOREST.createdAt },
+      ],
+    };
+    const output = renderFrame(forest, 80, { viewportX: 180, virtualWidth: 300 });
+    assert.ok(output.includes("█"));
+  });
+
+  it("does not show trees outside viewport", () => {
+    const forest = {
+      ...EMPTY_FOREST,
+      trees: [
+        { id: 1, type: "oak", growth: 1, x: 400, plantedAt: EMPTY_FOREST.createdAt },
+      ],
+    };
+    const withTree = renderFrame(forest, 80, { viewportX: 0, virtualWidth: 500 });
+    const without = renderFrame(EMPTY_FOREST, 80, { viewportX: 0, virtualWidth: 500 });
+    const treeLines = (output) => output.split("\n").slice(4, 14);
+    assert.deepEqual(treeLines(withTree), treeLines(without));
   });
 });

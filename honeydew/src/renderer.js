@@ -1,6 +1,7 @@
 import chalk from "chalk";
 
 import { getSprite, TREE_TYPES } from "./sprites.js";
+import { getVirtualWidth } from "./plant.js";
 
 const SKY_ROWS = 4;
 const TREE_ROWS = 10;
@@ -223,17 +224,25 @@ function buildStatsLine(forest, biome) {
 
 export function renderFrame(forest, termWidth = 80, options = {}) {
   const width = Math.max(40, termWidth);
-  const buffer = createBuffer(width);
+  const treeCount = forest.trees.length;
+  const virtualWidth = options.virtualWidth ?? getVirtualWidth(treeCount, width);
+  const viewportX = Math.max(
+    0,
+    Math.min(options.viewportX ?? 0, Math.max(0, virtualWidth - width)),
+  );
+
+  // Build the full virtual-width buffer
+  const buffer = createBuffer(virtualWidth);
   const groundStart = SKY_ROWS + TREE_ROWS;
-  const biome = getBiome(forest.trees.length);
+  const biome = getBiome(treeCount);
   const wilt = getWiltFactor(forest.lastActiveDate);
 
-  for (const star of generateStars(width, biome, options.twinkleSeed ?? 0)) {
+  for (const star of generateStars(virtualWidth, biome, options.twinkleSeed ?? 0)) {
     buffer[star.y][star.x] = { char: star.char, color: star.color };
   }
 
   for (let rowIndex = 0; rowIndex < GROUND_ROWS; rowIndex += 1) {
-    for (let x = 0; x < width; x += 1) {
+    for (let x = 0; x < virtualWidth; x += 1) {
       buffer[groundStart + rowIndex][x] = {
         char: "█",
         color: biome.ground[rowIndex],
@@ -246,16 +255,17 @@ export function renderFrame(forest, termWidth = 80, options = {}) {
     compositeSprite(buffer, getSprite(tree.type, tree.growth), tree.x, treeBaseY);
   }
 
-  applyFog(buffer, wilt, width);
+  applyFog(buffer, wilt, virtualWidth);
 
+  // Slice the viewport from the virtual buffer
   const lines = [];
   for (let y = 0; y < SCENE_HEIGHT - SPACER_ROWS - STATS_ROWS - CTA_ROWS; y += 1) {
     let line = "";
-    for (const cell of buffer[y]) {
+    for (let x = viewportX; x < viewportX + width; x += 1) {
+      const cell = buffer[y][x];
       if (!cell.color) {
         line += cell.char;
       } else {
-        // Apply wilting to tree rows and ground (skip sky)
         const color = wilt > 0 && y >= SKY_ROWS ? wiltColor(cell.color, wilt) : cell.color;
         line += chalk.hex(color)(cell.char);
       }
