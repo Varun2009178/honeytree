@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, it } from "node:test";
 const TEST_DIR = path.join(os.tmpdir(), `honeydew-plant-${Date.now()}`);
 process.env.HONEYDEW_DIR = TEST_DIR;
 
-const { plant } = await import("../src/plant.js");
+const { plant, getVirtualWidth } = await import("../src/plant.js");
 const { createEmptyForest, readForest, writeForest } = await import("../src/state.js");
 
 describe("plant", () => {
@@ -100,5 +100,19 @@ describe("plant", () => {
     const newTree = updated.trees.find((tree) => tree.id === 51);
     assert.ok(newTree.x >= 0, `x=${newTree.x} should be >= 0`);
     assert.ok(newTree.x <= 510, `x=${newTree.x} should be <= 510`);
+  });
+});
+
+describe("getVirtualWidth", () => {
+  it("returns terminal width for small forests", () => {
+    assert.equal(getVirtualWidth(5, 80), 80);
+  });
+
+  it("returns tree count * spacing for large forests", () => {
+    assert.equal(getVirtualWidth(50, 80), 500);
+  });
+
+  it("always returns at least terminal width", () => {
+    assert.equal(getVirtualWidth(3, 120), 120);
   });
 });

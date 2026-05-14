@@ -6,12 +6,16 @@ const MIN_GAP = 6;
 const DEFAULT_WIDTH = 80;
 const TREE_SPACING = 10;
 
+export function getVirtualWidth(treeCount, termWidth) {
+  return Math.max(termWidth, treeCount * TREE_SPACING);
+}
+
 function getPlantWidth(forest) {
   const termWidth = forest.viewerWidth && forest.viewerWidth > 40
     ? forest.viewerWidth
     : DEFAULT_WIDTH;
   const treeCount = forest.trees.length + 1;
-  return Math.max(termWidth, treeCount * TREE_SPACING);
+  return getVirtualWidth(treeCount, termWidth);
 }
 
 function randomItem(items) {
