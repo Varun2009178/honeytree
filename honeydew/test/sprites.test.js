@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { getSprite, TREE_TYPES } from "../src/sprites.js";
+import { getSprite, getGroundDetail, TREE_TYPES, GROUND_DETAIL_TYPES } from "../src/sprites.js";
 
 describe("sprites", () => {
   it("exports all five tree types", () => {
@@ -31,6 +31,35 @@ describe("sprites", () => {
       for (const cell of row) {
         assert.equal(Array.isArray(cell), true);
         assert.equal(cell.length, 2);
+      }
+    }
+  });
+});
+
+describe("ground details", () => {
+  it("exports ground detail types", () => {
+    assert.ok(Array.isArray(GROUND_DETAIL_TYPES));
+    assert.ok(GROUND_DETAIL_TYPES.length > 0);
+  });
+
+  it("returns sprites for every detail type", () => {
+    for (const type of GROUND_DETAIL_TYPES) {
+      const sprite = getGroundDetail(type);
+      assert.ok(Array.isArray(sprite.rows));
+      assert.ok(sprite.rows.length > 0);
+      assert.ok(sprite.rows.length <= 2, `${type} should be 1-2 rows tall`);
+      assert.ok(sprite.width <= 2, `${type} should be 1-2 chars wide`);
+    }
+  });
+
+  it("stores rows as [char, color] tuples", () => {
+    for (const type of GROUND_DETAIL_TYPES) {
+      const sprite = getGroundDetail(type);
+      for (const row of sprite.rows) {
+        for (const cell of row) {
+          assert.equal(Array.isArray(cell), true);
+          assert.equal(cell.length, 2);
+        }
       }
     }
   });

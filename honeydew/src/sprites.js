@@ -14,6 +14,19 @@ const COLORS = {
   cherryBloom: "#f0b7cf",
 };
 
+const DETAIL_COLORS = {
+  mushroom: "#c4a882",
+  mushroomCap: "#9e4a3a",
+  rock: "#6b6b6b",
+  rockLight: "#8a8a8a",
+  grass: "#4a7a3a",
+  grassLight: "#6ba85a",
+  leaf: "#8a6a3a",
+  leafDark: "#6a4a2a",
+  bush: "#3a6a2a",
+  bushLight: "#5a8a4a",
+};
+
 function parse(template, palette) {
   const lines = template.trim().split("\n");
   const width = Math.max(...lines.map((line) => line.length));
@@ -228,6 +241,50 @@ pPPpPPPp
     ),
   },
 };
+
+const GROUND_DETAILS = {
+  mushroom: parse(
+    `
+rr
+ t
+`,
+    { r: DETAIL_COLORS.mushroomCap, t: DETAIL_COLORS.mushroom },
+  ),
+  rock: parse(
+    `
+rR
+`,
+    { r: DETAIL_COLORS.rock, R: DETAIL_COLORS.rockLight },
+  ),
+  grass: parse(
+    `
+gG
+`,
+    { g: DETAIL_COLORS.grass, G: DETAIL_COLORS.grassLight },
+  ),
+  leaf: parse(
+    `
+lL
+`,
+    { l: DETAIL_COLORS.leaf, L: DETAIL_COLORS.leafDark },
+  ),
+  bush: parse(
+    `
+bB
+`,
+    { b: DETAIL_COLORS.bush, B: DETAIL_COLORS.bushLight },
+  ),
+};
+
+export const GROUND_DETAIL_TYPES = Object.keys(GROUND_DETAILS);
+
+export function getGroundDetail(type) {
+  const detail = GROUND_DETAILS[type];
+  if (!detail) {
+    throw new Error(`Unknown ground detail type: ${type}`);
+  }
+  return detail;
+}
 
 function getGrowthStage(growth) {
   if (growth < 0.2) return "seed";
