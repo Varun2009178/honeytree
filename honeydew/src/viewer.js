@@ -5,6 +5,21 @@ import { getForestFile, readForest, writeForest } from "./state.js";
 import { migrateLayout } from "./migrate.js";
 import { getVirtualWidth } from "./plant.js";
 
+export function createForestWatcher(filePath, onChange) {
+  try {
+    const stat = fs.statSync(filePath);
+    if (!stat.isFile()) return null;
+
+    const watcher = fs.watch(filePath, onChange);
+    watcher.on("error", () => {
+      try { watcher.close(); } catch {}
+    });
+    return watcher;
+  } catch {
+    return null;
+  }
+}
+
 function writeAnsi(code) {
   process.stdout.write(code);
 }
@@ -197,15 +212,7 @@ export async function viewer() {
   // fs.watch can drop events on macOS after atomic renames, so
   // use it for fast response but also poll as a reliable fallback
   function startWatcher() {
-    try {
-      const watcher = fs.watch(forestFile, () => {
-        checkForUpdates();
-      });
-      watcher.on("error", () => {});
-      return watcher;
-    } catch {
-      return null;
-    }
+    return createForestWatcher(forestFile, () => checkForUpdates());
   }
 
   let watcher = startWatcher();
