@@ -1,6 +1,6 @@
 import chalk from "chalk";
 
-import { getSprite, TREE_TYPES } from "./sprites.js";
+import { getSprite, getGroundDetail, TREE_TYPES, GROUND_DETAIL_TYPES } from "./sprites.js";
 import { getVirtualWidth } from "./plant.js";
 
 const SKY_ROWS = 4;
@@ -93,6 +93,8 @@ const BIOMES = [
     starDensity: 12,
     starColors: ["#3a3a3a", "#444444"],
     label: "clearing",
+    detailDensity: 0,
+    detailTypes: [],
   },
   { // 10-24: young grove
     ground: ["#22492d", "#18361f"],
@@ -100,6 +102,8 @@ const BIOMES = [
     starDensity: 9,
     starColors: ["#444444", "#5d5d5d"],
     label: "grove",
+    detailDensity: 18,
+    detailTypes: ["rock", "grass"],
   },
   { // 25-49: dense woodland
     ground: ["#1e4a28", "#163a1e"],
@@ -107,6 +111,8 @@ const BIOMES = [
     starDensity: 7,
     starColors: ["#4d4d4d", "#5d5d5d", "#6a6a55"],
     label: "woodland",
+    detailDensity: 12,
+    detailTypes: ["rock", "grass", "mushroom", "bush"],
   },
   { // 50-99: old growth
     ground: ["#1a5230", "#124020"],
@@ -114,6 +120,8 @@ const BIOMES = [
     starDensity: 6,
     starColors: ["#5d5d5d", "#6d6d5a", "#7a7a60"],
     label: "old growth",
+    detailDensity: 8,
+    detailTypes: ["rock", "grass", "mushroom", "bush", "leaf"],
   },
   { // 100+: ancient forest
     ground: ["#165a32", "#0e4822"],
@@ -121,6 +129,8 @@ const BIOMES = [
     starDensity: 5,
     starColors: ["#6d6d5a", "#7a7a60", "#8a8a6a"],
     label: "ancient forest",
+    detailDensity: 5,
+    detailTypes: ["rock", "grass", "mushroom", "bush", "leaf"],
   },
 ];
 
@@ -178,6 +188,41 @@ function compositeSprite(buffer, sprite, centerX, baseY) {
       if (!color) continue;
       buffer[targetY][targetX] = { char, color };
     }
+  }
+}
+
+function renderGroundDetails(buffer, biome, virtualWidth, groundStart) {
+  if (biome.detailDensity === 0 || biome.detailTypes.length === 0) return;
+
+  const detailRow = groundStart - 1; // lowest tree row, just above ground
+
+  for (let x = 0; x < virtualWidth; x += 1) {
+    const h = hash(x * 53 + 9973);
+    if (h % biome.detailDensity !== 0) continue;
+
+    // Pick detail type deterministically
+    const detailType = biome.detailTypes[h % biome.detailTypes.length];
+    const sprite = getGroundDetail(detailType);
+
+    // Only place if all cells are currently empty (no tree pixel there)
+    // compositeSprite centers the sprite, so match that logic here
+    const offsetX = x - Math.floor(sprite.width / 2);
+    let blocked = false;
+    for (let rowIndex = 0; rowIndex < sprite.rows.length; rowIndex++) {
+      const targetY = detailRow - rowIndex;
+      if (targetY < 0 || targetY >= buffer.length) { blocked = true; break; }
+      for (let colIndex = 0; colIndex < sprite.rows[rowIndex].length; colIndex++) {
+        const targetX = offsetX + colIndex;
+        if (targetX < 0 || targetX >= virtualWidth) { blocked = true; break; }
+        const [, color] = sprite.rows[rowIndex][colIndex];
+        if (color && buffer[targetY][targetX].color) { blocked = true; break; }
+      }
+      if (blocked) break;
+    }
+    if (blocked) continue;
+
+    // Place the detail sprite (compositeSprite centers at x)
+    compositeSprite(buffer, sprite, x, detailRow);
   }
 }
 
@@ -281,6 +326,8 @@ export function renderFrame(forest, termWidth = 80, options = {}) {
     compositeSprite(buffer, getSprite(tree.type, tree.growth), tree.x, treeBaseY - yOffset);
   }
 
+  renderGroundDetails(buffer, biome, virtualWidth, groundStart);
+
   applyFog(buffer, wilt, virtualWidth);
 
   // Slice the viewport from the virtual buffer
@@ -336,6 +383,8 @@ export function buildScene(forest, width) {
     const yOffset = getTreeYOffset(tree.id);
     compositeSprite(buffer, getSprite(tree.type, tree.growth), tree.x, treeBaseY - yOffset);
   }
+
+  renderGroundDetails(buffer, biome, w, groundStart);
 
   applyFog(buffer, wilt, w);
 

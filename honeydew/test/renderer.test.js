@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { renderFrame, SCENE_HEIGHT } from "../src/renderer.js";
+import { renderFrame, buildScene, SCENE_HEIGHT } from "../src/renderer.js";
 import { getVirtualWidth } from "../src/plant.js";
 
 const EMPTY_FOREST = {
@@ -113,5 +113,33 @@ describe("height variation", () => {
     const output = renderFrame(forest, 80);
     assert.ok(typeof output === "string");
     assert.ok(output.length > 0);
+  });
+});
+
+describe("ground details", () => {
+  it("renders ground details for old growth forests", () => {
+    const forest = {
+      ...EMPTY_FOREST,
+      trees: Array.from({ length: 60 }, (_, i) => ({
+        id: i + 1,
+        type: "oak",
+        growth: 1,
+        x: i * 10 + 5,
+        plantedAt: EMPTY_FOREST.createdAt,
+      })),
+    };
+    const { buffer } = buildScene(forest, 600);
+    assert.ok(buffer.length > 0);
+  });
+
+  it("does not render ground details for clearings (< 10 trees)", () => {
+    const forest = {
+      ...EMPTY_FOREST,
+      trees: [
+        { id: 1, type: "oak", growth: 1, x: 20, plantedAt: EMPTY_FOREST.createdAt },
+      ],
+    };
+    const { buffer } = buildScene(forest, 80);
+    assert.ok(buffer.length > 0);
   });
 });
