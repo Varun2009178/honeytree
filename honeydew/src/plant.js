@@ -2,13 +2,16 @@ import { getSprite, TREE_TYPES } from "./sprites.js";
 import { createEmptyForest, readForest, writeForest } from "./state.js";
 import { findBadgeFile, writeBadgeSVG } from "./badge.js";
 
-const MIN_GAP = 4;
+const MIN_GAP = 6;
 const DEFAULT_WIDTH = 80;
+const TREE_SPACING = 10;
 
 function getPlantWidth(forest) {
-  // Use the width saved by the viewer, fall back to default
-  if (forest.viewerWidth && forest.viewerWidth > 40) return forest.viewerWidth;
-  return DEFAULT_WIDTH;
+  const termWidth = forest.viewerWidth && forest.viewerWidth > 40
+    ? forest.viewerWidth
+    : DEFAULT_WIDTH;
+  const treeCount = forest.trees.length + 1;
+  return Math.max(termWidth, treeCount * TREE_SPACING);
 }
 
 function randomItem(items) {

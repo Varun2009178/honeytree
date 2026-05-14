@@ -80,4 +80,25 @@ describe("plant", () => {
     const updated = readForest();
     assert.equal(updated.trees.find((tree) => tree.id === 1).growth, 1);
   });
+
+  it("spreads trees across virtual width for large forests", async () => {
+    const forest = createEmptyForest();
+    for (let i = 1; i <= 50; i++) {
+      forest.trees.push({
+        id: i,
+        type: "oak",
+        growth: 1,
+        x: 5 + i,
+        plantedAt: new Date().toISOString(),
+      });
+    }
+    writeForest(forest);
+
+    await plant();
+
+    const updated = readForest();
+    const newTree = updated.trees.find((tree) => tree.id === 51);
+    assert.ok(newTree.x >= 0, `x=${newTree.x} should be >= 0`);
+    assert.ok(newTree.x <= 510, `x=${newTree.x} should be <= 510`);
+  });
 });
