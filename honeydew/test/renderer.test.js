@@ -44,4 +44,9 @@ describe("renderer", () => {
     );
     assert.notEqual(withTree, renderFrame(EMPTY_FOREST, 80));
   });
+
+  it("has the correct scene height (sky + trees + ground + spacer + stats + cta)", () => {
+    // 4 sky + 10 trees + 2 ground + 1 spacer + 1 stats + 1 cta = 19
+    assert.equal(SCENE_HEIGHT, 19);
+  });
 });

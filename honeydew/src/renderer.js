@@ -3,7 +3,7 @@ import chalk from "chalk";
 import { getSprite, TREE_TYPES } from "./sprites.js";
 
 const SKY_ROWS = 4;
-const TREE_ROWS = 7;
+const TREE_ROWS = 10;
 const GROUND_ROWS = 2;
 const SPACER_ROWS = 1;
 const STATS_ROWS = 1;
