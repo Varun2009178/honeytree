@@ -2,6 +2,7 @@ import fs from "node:fs";
 
 import { renderFrame } from "./renderer.js";
 import { getForestFile, readForest, writeForest } from "./state.js";
+import { migrateLayout } from "./migrate.js";
 
 function writeAnsi(code) {
   process.stdout.write(code);
@@ -61,6 +62,13 @@ export async function viewer() {
   if (!forest || !fs.existsSync(forestFile)) {
     console.error('No forest found. Run "honeytree init" first.');
     process.exit(1);
+  }
+
+  // Migrate old layouts on first view
+  if (forest && (!forest.layoutVersion || forest.layoutVersion < 2)) {
+    const termWidth = process.stdout.columns || 80;
+    migrateLayout(forest, termWidth);
+    // Will be written to disk by syncWidth below
   }
 
   // Save terminal width so plant knows how wide to spread trees

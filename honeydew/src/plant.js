@@ -1,6 +1,7 @@
 import { getSprite, TREE_TYPES } from "./sprites.js";
 import { createEmptyForest, readForest, writeForest } from "./state.js";
 import { findBadgeFile, writeBadgeSVG } from "./badge.js";
+import { migrateLayout } from "./migrate.js";
 
 const MIN_GAP = 6;
 const DEFAULT_WIDTH = 80;
@@ -70,6 +71,14 @@ function daysBetween(dateA, dateB) {
 export async function plant() {
   const forest = readForest() ?? createEmptyForest();
   const width = getPlantWidth(forest);
+
+  // Migrate old layouts to use virtual width
+  if (!forest.layoutVersion || forest.layoutVersion < 2) {
+    const termWidth = forest.viewerWidth && forest.viewerWidth > 40
+      ? forest.viewerWidth
+      : DEFAULT_WIDTH;
+    migrateLayout(forest, termWidth);
+  }
 
   // Update streak
   const today = new Date().toISOString().slice(0, 10);

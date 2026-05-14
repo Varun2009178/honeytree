@@ -101,6 +101,28 @@ describe("plant", () => {
     assert.ok(newTree.x >= 0, `x=${newTree.x} should be >= 0`);
     assert.ok(newTree.x <= 510, `x=${newTree.x} should be <= 510`);
   });
+
+  it("migrates layout on first plant if no layoutVersion", async () => {
+    const forest = createEmptyForest();
+    for (let i = 1; i <= 30; i++) {
+      forest.trees.push({
+        id: i,
+        type: "oak",
+        growth: 1,
+        x: 5 + i,
+        plantedAt: new Date().toISOString(),
+      });
+    }
+    writeForest(forest);
+
+    await plant();
+
+    const updated = readForest();
+    assert.equal(updated.layoutVersion, 2);
+    const xs = updated.trees.filter((t) => t.id <= 30).map((t) => t.x);
+    const spread = Math.max(...xs) - Math.min(...xs);
+    assert.ok(spread > 100, `spread ${spread} should be > 100 after migration`);
+  });
 });
 
 describe("getVirtualWidth", () => {
