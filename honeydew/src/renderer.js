@@ -145,6 +145,11 @@ function hash(seed) {
   return ((value >>> 16) ^ value) >>> 0;
 }
 
+function getTreeYOffset(treeId) {
+  const h = hash(treeId * 13 + 7);
+  return (h % 3) - 1; // Returns -1, 0, or 1
+}
+
 function generateStars(width, biome, twinkle = 0) {
   const stars = [];
   for (let x = 0; x < width; x += 1) {
@@ -272,7 +277,8 @@ export function renderFrame(forest, termWidth = 80, options = {}) {
 
   const treeBaseY = groundStart - 1;
   for (const tree of forest.trees) {
-    compositeSprite(buffer, getSprite(tree.type, tree.growth), tree.x, treeBaseY);
+    const yOffset = getTreeYOffset(tree.id);
+    compositeSprite(buffer, getSprite(tree.type, tree.growth), tree.x, treeBaseY - yOffset);
   }
 
   applyFog(buffer, wilt, virtualWidth);
@@ -327,7 +333,8 @@ export function buildScene(forest, width) {
 
   const treeBaseY = groundStart - 1;
   for (const tree of forest.trees) {
-    compositeSprite(buffer, getSprite(tree.type, tree.growth), tree.x, treeBaseY);
+    const yOffset = getTreeYOffset(tree.id);
+    compositeSprite(buffer, getSprite(tree.type, tree.growth), tree.x, treeBaseY - yOffset);
   }
 
   applyFog(buffer, wilt, w);
@@ -363,7 +370,8 @@ export function renderPlainText(forest, width = 60) {
 
   const treeBaseY = groundStart - 1;
   for (const tree of forest.trees) {
-    compositeSprite(buffer, getSprite(tree.type, tree.growth), tree.x, treeBaseY);
+    const yOffset = getTreeYOffset(tree.id);
+    compositeSprite(buffer, getSprite(tree.type, tree.growth), tree.x, treeBaseY - yOffset);
   }
 
   const lines = [];

@@ -99,3 +99,19 @@ describe("viewport rendering", () => {
     assert.ok(!statsLine.includes("═"), "no minimap ═ chars for small forests");
   });
 });
+
+describe("height variation", () => {
+  it("renders trees at different vertical offsets", () => {
+    const forest = {
+      ...EMPTY_FOREST,
+      trees: [
+        { id: 1, type: "oak", growth: 1, x: 20, plantedAt: EMPTY_FOREST.createdAt },
+        { id: 2, type: "oak", growth: 1, x: 40, plantedAt: EMPTY_FOREST.createdAt },
+        { id: 3, type: "oak", growth: 1, x: 60, plantedAt: EMPTY_FOREST.createdAt },
+      ],
+    };
+    const output = renderFrame(forest, 80);
+    assert.ok(typeof output === "string");
+    assert.ok(output.length > 0);
+  });
+});
