@@ -76,4 +76,26 @@ describe("viewport rendering", () => {
     const treeLines = (output) => output.split("\n").slice(4, 14);
     assert.deepEqual(treeLines(withTree), treeLines(without));
   });
+
+  it("shows viewport indicator when forest is wider than terminal", () => {
+    const forest = {
+      ...EMPTY_FOREST,
+      trees: Array.from({ length: 20 }, (_, i) => ({
+        id: i + 1,
+        type: "oak",
+        growth: 1,
+        x: i * 10 + 5,
+        plantedAt: EMPTY_FOREST.createdAt,
+      })),
+    };
+    const output = renderFrame(forest, 80, { viewportX: 40, virtualWidth: 200 });
+    assert.ok(output.includes("["), "should contain minimap left bracket");
+    assert.ok(output.includes("]"), "should contain minimap right bracket");
+  });
+
+  it("does not show viewport indicator when forest fits in terminal", () => {
+    const output = renderFrame(EMPTY_FOREST, 80);
+    const statsLine = output.split("\n").find((l) => l.includes("honeytree"));
+    assert.ok(!statsLine.includes("═"), "no minimap ═ chars for small forests");
+  });
 });

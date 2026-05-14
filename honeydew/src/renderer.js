@@ -199,7 +199,7 @@ function buildStreakSegment(forest) {
   return chalk.hex(STREAK_COLOR)(`${streak}-day streak`);
 }
 
-function buildStatsLine(forest, biome) {
+function buildStatsLine(forest, biome, viewportX = 0, virtualWidth = 0, termWidth = 80) {
   const treeCount = forest.trees.length;
   const milestone = getNextMilestone(treeCount);
   const progress = milestone === 0 ? 0 : treeCount / milestone;
@@ -208,6 +208,25 @@ function buildStatsLine(forest, biome) {
   const bar =
     chalk.hex(BAR_FILL)("█".repeat(filledWidth)) +
     chalk.hex(BAR_EMPTY)("░".repeat(barWidth - filledWidth));
+
+  // Viewport minimap — only show when forest is wider than terminal
+  let minimap = "";
+  if (virtualWidth > termWidth) {
+    const mapWidth = 12;
+    const viewFraction = termWidth / virtualWidth;
+    const thumbWidth = Math.max(1, Math.round(viewFraction * mapWidth));
+    const maxOffset = virtualWidth - termWidth;
+    const thumbPos = maxOffset > 0
+      ? Math.round((viewportX / maxOffset) * (mapWidth - thumbWidth))
+      : 0;
+    const mapBar =
+      "─".repeat(thumbPos) +
+      "═".repeat(thumbWidth) +
+      "─".repeat(mapWidth - thumbPos - thumbWidth);
+    minimap = chalk.hex(STATS_TEXT)(" [") +
+      chalk.hex(BAR_FILL)(mapBar) +
+      chalk.hex(STATS_TEXT)("]");
+  }
 
   return (
     chalk.hex(STATS_ACCENT)(" honeytree") +
@@ -218,7 +237,8 @@ function buildStatsLine(forest, biome) {
     chalk.hex(STATS_TEXT)(" · ") +
     bar +
     chalk.hex(STATS_TEXT)(` next: ${getNextTreeType(treeCount)}`) +
-    chalk.hex("#555555")(` [${biome.label}]`)
+    chalk.hex("#555555")(` [${biome.label}]`) +
+    minimap
   );
 }
 
@@ -274,7 +294,7 @@ export function renderFrame(forest, termWidth = 80, options = {}) {
   }
 
   lines.push("");
-  lines.push(buildStatsLine(forest, biome));
+  lines.push(buildStatsLine(forest, biome, viewportX, virtualWidth, width));
   lines.push(
     chalk.hex("#555555")(" add your forest to your README → ") +
     chalk.hex(STATS_ACCENT)("honeytree badge"),
