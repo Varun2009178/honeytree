@@ -5,7 +5,7 @@ import { migrateLayout } from "./migrate.js";
 
 const MIN_GAP = 6;
 const DEFAULT_WIDTH = 80;
-const TREE_SPACING = 10;
+const TREE_SPACING = 6;
 
 export function getVirtualWidth(treeCount, termWidth) {
   return Math.max(termWidth, treeCount * TREE_SPACING);

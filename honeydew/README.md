@@ -154,7 +154,9 @@ Each species has 4 growth stages (seed, sapling, young, full). Existing trees gr
 
 The viewer adapts to your terminal width — expand your terminal and new trees will spread across the full width.
 
-Press `Ctrl+C` to exit. The viewer shows a summary of your forest when you close it.
+Use **left/right arrow keys** to pan across the full forest canvas. When a new tree is planted, the viewer automatically scrolls to center on it. A minimap in the stats bar shows your current position.
+
+Press `Ctrl+C` or `q` to exit. The viewer shows a summary of your forest when you close it.
 
 ### Reading the Stats Bar
 

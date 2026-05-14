@@ -73,7 +73,7 @@ export async function viewer() {
   }
 
   function renderForest(forest, twinkleSeed = 0) {
-    moveHome();
+    clearScreen();
     const termWidth = process.stdout.columns || 80;
     const vw = getVirtualWidth(forest.trees.length, termWidth);
     process.stdout.write(renderFrame(forest, termWidth, {

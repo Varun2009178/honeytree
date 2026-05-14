@@ -1,8 +1,8 @@
 {
   "name": "honeytree",
   "displayName": "Honeytree",
-  "description": "Grow a forest every time your AI coding tool generates code",
-  "version": "0.1.0",
+  "description": "grow a forest in your terminal!",
+  "version": "1.1.5",
   "publisher": "varunnukala",
   "engines": {
     "vscode": "^1.85.0"

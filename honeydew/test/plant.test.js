@@ -131,7 +131,7 @@ describe("getVirtualWidth", () => {
   });
 
   it("returns tree count * spacing for large forests", () => {
-    assert.equal(getVirtualWidth(50, 80), 500);
+    assert.equal(getVirtualWidth(50, 80), 300);
   });
 
   it("always returns at least terminal width", () => {

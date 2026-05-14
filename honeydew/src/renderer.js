@@ -157,7 +157,7 @@ function hash(seed) {
 
 function getTreeYOffset(treeId) {
   const h = hash(treeId * 13 + 7);
-  return (h % 3) - 1; // Returns -1, 0, or 1
+  return h % 2; // Returns 0 or 1 (only up, never below ground)
 }
 
 function generateStars(width, biome, twinkle = 0) {
@@ -349,7 +349,7 @@ export function renderFrame(forest, termWidth = 80, options = {}) {
   lines.push("");
   lines.push(buildStatsLine(forest, biome, viewportX, virtualWidth, width));
   lines.push(
-    chalk.hex("#555555")(" add your forest to your README → ") +
+    chalk.hex("#555555")(" ← → pan  ·  add your forest to your README → ") +
     chalk.hex(STATS_ACCENT)("honeytree badge"),
   );
 
