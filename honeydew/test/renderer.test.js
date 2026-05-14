@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 
 import { renderFrame, buildScene, SCENE_HEIGHT } from "../src/renderer.js";
 import { getVirtualWidth } from "../src/plant.js";
+import { TREE_TYPES } from "../src/sprites.js";
 
 const EMPTY_FOREST = {
   trees: [],
@@ -141,5 +142,53 @@ describe("ground details", () => {
     };
     const { buffer } = buildScene(forest, 80);
     assert.ok(buffer.length > 0);
+  });
+});
+
+describe("buildScene with virtual width", () => {
+  it("builds a scene buffer wider than terminal width", () => {
+    const forest = {
+      ...EMPTY_FOREST,
+      trees: Array.from({ length: 20 }, (_, i) => ({
+        id: i + 1,
+        type: "oak",
+        growth: 1,
+        x: i * 10 + 5,
+        plantedAt: EMPTY_FOREST.createdAt,
+      })),
+    };
+    const { buffer } = buildScene(forest, 200);
+    assert.equal(buffer[0].length, 200);
+  });
+});
+
+describe("full integration", () => {
+  it("renders a large forest with viewport, height variation, and ground details", () => {
+    const forest = {
+      trees: Array.from({ length: 77 }, (_, i) => ({
+        id: i + 1,
+        type: TREE_TYPES[i % TREE_TYPES.length],
+        growth: 0.5 + (i % 5) * 0.1,
+        x: i * 10 + 5,
+        plantedAt: "2026-04-12T00:00:00.000Z",
+      })),
+      totalPrompts: 77,
+      createdAt: "2026-04-12T00:00:00.000Z",
+      lastActiveDate: new Date().toISOString().slice(0, 10),
+      streak: 5,
+    };
+
+    const vw = 770;
+    const frame1 = renderFrame(forest, 80, { viewportX: 0, virtualWidth: vw });
+    const frame2 = renderFrame(forest, 80, { viewportX: 200, virtualWidth: vw });
+    const frame3 = renderFrame(forest, 80, { viewportX: 690, virtualWidth: vw });
+
+    for (const frame of [frame1, frame2, frame3]) {
+      assert.equal(typeof frame, "string");
+      assert.equal(frame.split("\n").length, SCENE_HEIGHT);
+    }
+
+    assert.notEqual(frame1, frame2);
+    assert.notEqual(frame2, frame3);
   });
 });
