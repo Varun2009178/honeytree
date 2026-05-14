@@ -3,6 +3,7 @@ import fs from "node:fs";
 import { renderFrame } from "./renderer.js";
 import { getForestFile, readForest, writeForest } from "./state.js";
 import { migrateLayout } from "./migrate.js";
+import { getVirtualWidth } from "./plant.js";
 
 function writeAnsi(code) {
   process.stdout.write(code);
@@ -24,35 +25,8 @@ function moveHome() {
   writeAnsi("\x1b[H");
 }
 
-function renderForest(forest, twinkleSeed = 0) {
-  moveHome();
-  process.stdout.write(renderFrame(forest, process.stdout.columns || 80, { twinkleSeed }));
-}
-
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-async function animateNewTree(forest, newTreeId) {
-  const tree = forest.trees.find((entry) => entry.id === newTreeId);
-  if (!tree) {
-    renderForest(forest);
-    return;
-  }
-
-  const originalGrowth = tree.growth;
-  const frames = [0.12, 0.32, 0.6, originalGrowth].filter(
-    (value, index, values) => value <= originalGrowth && values.indexOf(value) === index,
-  );
-
-  for (let index = 0; index < frames.length; index += 1) {
-    tree.growth = frames[index];
-    renderForest(forest, index);
-    await delay(120);
-  }
-
-  tree.growth = originalGrowth;
-  renderForest(forest);
 }
 
 export async function viewer() {
@@ -82,16 +56,65 @@ export async function viewer() {
     }
   }
 
+  let lastMaxId = forest.trees.reduce((max, tree) => Math.max(max, tree.id), 0);
+  let lastTotalPrompts = forest.totalPrompts;
+  let animating = false;
+
+  let viewportX = forest.viewportX || 0;
+  const PAN_STEP = 4;
+
+  function getViewportWidth() {
+    return process.stdout.columns || 80;
+  }
+
+  function clampViewport(x) {
+    const vw = getVirtualWidth(forest.trees.length, getViewportWidth());
+    return Math.max(0, Math.min(x, Math.max(0, vw - getViewportWidth())));
+  }
+
+  function renderForest(forest, twinkleSeed = 0) {
+    moveHome();
+    const termWidth = process.stdout.columns || 80;
+    const vw = getVirtualWidth(forest.trees.length, termWidth);
+    process.stdout.write(renderFrame(forest, termWidth, {
+      twinkleSeed,
+      viewportX,
+      virtualWidth: vw,
+    }));
+  }
+
+  async function animateNewTree(forest, newTreeId) {
+    const tree = forest.trees.find((entry) => entry.id === newTreeId);
+    if (!tree) {
+      renderForest(forest);
+      return;
+    }
+
+    const originalGrowth = tree.growth;
+    const frames = [0.12, 0.32, 0.6, originalGrowth].filter(
+      (value, index, values) => value <= originalGrowth && values.indexOf(value) === index,
+    );
+
+    for (let index = 0; index < frames.length; index += 1) {
+      tree.growth = frames[index];
+      renderForest(forest, index);
+      await delay(120);
+    }
+
+    tree.growth = originalGrowth;
+    renderForest(forest);
+  }
+
   syncWidth();
   hideCursor();
   clearScreen();
   renderForest(forest);
 
-  let lastMaxId = forest.trees.reduce((max, tree) => Math.max(max, tree.id), 0);
-  let lastTotalPrompts = forest.totalPrompts;
-  let animating = false;
-
   const cleanup = () => {
+    // Persist viewport position for next session
+    forest.viewportX = viewportX;
+    ignoreNextChange = true;
+    writeForest(forest);
     showCursor();
     clearScreen();
     console.log(
@@ -107,6 +130,34 @@ export async function viewer() {
     clearScreen();
     renderForest(forest);
   });
+
+  // Enable raw mode for keypress handling
+  if (process.stdin.isTTY) {
+    process.stdin.setRawMode(true);
+    process.stdin.resume();
+    process.stdin.on("data", (data) => {
+      const key = data.toString();
+      // Ctrl+C or q to quit
+      if (key === "\x03" || key === "q") {
+        cleanup();
+        return;
+      }
+      // Left arrow: \x1b[D
+      if (key === "\x1b[D") {
+        viewportX = clampViewport(viewportX - PAN_STEP);
+        forest.viewportX = viewportX;
+        renderForest(forest);
+        return;
+      }
+      // Right arrow: \x1b[C
+      if (key === "\x1b[C") {
+        viewportX = clampViewport(viewportX + PAN_STEP);
+        forest.viewportX = viewportX;
+        renderForest(forest);
+        return;
+      }
+    });
+  }
 
   // Check for changes — used by both fs.watch and polling fallback
   async function checkForUpdates() {
@@ -129,6 +180,12 @@ export async function viewer() {
 
     if (nextMaxId > lastMaxId) {
       lastMaxId = nextMaxId;
+      // Center viewport on the new tree
+      const newTree = forest.trees.find((t) => t.id === nextMaxId);
+      if (newTree) {
+        const termWidth = getViewportWidth();
+        viewportX = clampViewport(newTree.x - Math.floor(termWidth / 2));
+      }
       animating = true;
       await animateNewTree(forest, nextMaxId);
       animating = false;
