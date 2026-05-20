@@ -1,6 +1,7 @@
 import fs from "node:fs";
 
 import { renderFrame } from "./renderer.js";
+import { getAnimationFrames } from "./animation.js";
 import { getForestFile, readForest, writeForest } from "./state.js";
 import { migrateLayout } from "./migrate.js";
 import { getVirtualWidth } from "./plant.js";
@@ -105,18 +106,36 @@ export async function viewer() {
       return;
     }
 
-    const originalGrowth = tree.growth;
-    const frames = [0.12, 0.32, 0.6, originalGrowth].filter(
-      (value, index, values) => value <= originalGrowth && values.indexOf(value) === index,
-    );
+    const ANIM_DURATION = 5000; // 5 seconds total
+    const FRAME_COUNT = 40;
+    const FRAME_DELAY = Math.round(ANIM_DURATION / FRAME_COUNT);
 
-    for (let index = 0; index < frames.length; index += 1) {
-      tree.growth = frames[index];
-      renderForest(forest, index);
-      await delay(120);
+    const frames = getAnimationFrames(tree.type, tree.growth, FRAME_COUNT);
+
+    for (let i = 0; i < frames.length; i++) {
+      const termWidth = process.stdout.columns || 80;
+      const vw = getVirtualWidth(forest.trees.length, termWidth);
+      clearScreen();
+
+      const frameData = frames[i];
+      const renderOptions = {
+        twinkleSeed: i,
+        viewportX,
+        virtualWidth: vw,
+        spriteOverride: { treeId: tree.id, sprite: frameData.sprite },
+      };
+
+      if (frameData.groundOverlay) {
+        renderOptions.groundOverlay = {
+          treeX: tree.x,
+          overlays: frameData.groundOverlay,
+        };
+      }
+
+      process.stdout.write(renderFrame(forest, termWidth, renderOptions));
+      await delay(FRAME_DELAY);
     }
 
-    tree.growth = originalGrowth;
     renderForest(forest);
   }
 
