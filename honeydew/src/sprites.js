@@ -27,7 +27,7 @@ const DETAIL_COLORS = {
   bushLight: "#5a8a4a",
 };
 
-function parse(template, palette) {
+export function parse(template, palette) {
   const lines = template.trim().split("\n");
   const width = Math.max(...lines.map((line) => line.length));
   const rows = lines
@@ -300,3 +300,4 @@ export function getSprite(type, growth) {
   }
   return spriteSet[getGrowthStage(growth)];
 }
+
