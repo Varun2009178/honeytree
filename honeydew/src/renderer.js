@@ -321,9 +321,25 @@ export function renderFrame(forest, termWidth = 80, options = {}) {
   }
 
   const treeBaseY = groundStart - 1;
+  const spriteOverride = options.spriteOverride ?? null;
   for (const tree of forest.trees) {
     const yOffset = getTreeYOffset(tree.id);
-    compositeSprite(buffer, getSprite(tree.type, tree.growth), tree.x, treeBaseY - yOffset);
+    const sprite = (spriteOverride && spriteOverride.treeId === tree.id)
+      ? spriteOverride.sprite
+      : getSprite(tree.type, tree.growth);
+    compositeSprite(buffer, sprite, tree.x, treeBaseY - yOffset);
+  }
+
+  // Apply ground overlay (soil reaction during tree birth animation)
+  const groundOverlayOpt = options.groundOverlay ?? null;
+  if (groundOverlayOpt && groundOverlayOpt.overlays) {
+    const groundRow = groundStart; // first ground row
+    for (const overlay of groundOverlayOpt.overlays) {
+      const ox = groundOverlayOpt.treeX + overlay.dx;
+      if (ox >= 0 && ox < virtualWidth && groundRow < buffer.length) {
+        buffer[groundRow][ox] = { char: overlay.char, color: overlay.color };
+      }
+    }
   }
 
   renderGroundDetails(buffer, biome, virtualWidth, groundStart);

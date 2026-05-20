@@ -3,7 +3,7 @@ import { describe, it } from "node:test";
 
 import { renderFrame, buildScene, SCENE_HEIGHT } from "../src/renderer.js";
 import { getVirtualWidth } from "../src/plant.js";
-import { TREE_TYPES } from "../src/sprites.js";
+import { TREE_TYPES, getSprite } from "../src/sprites.js";
 
 const EMPTY_FOREST = {
   trees: [],
@@ -190,5 +190,25 @@ describe("full integration", () => {
 
     assert.notEqual(frame1, frame2);
     assert.notEqual(frame2, frame3);
+  });
+});
+
+describe("ground overlay", () => {
+  it("applies groundOverlay pixels to the ground area", () => {
+    const forest = {
+      ...EMPTY_FOREST,
+      trees: [{ id: 1, type: "oak", growth: 1, x: 20, plantedAt: EMPTY_FOREST.createdAt }],
+    };
+    const overlay = [
+      { dx: -1, char: "░", color: "#4a5a48" },
+      { dx: 0, char: "░", color: "#4a5a48" },
+      { dx: 1, char: "░", color: "#4a5a48" },
+    ];
+    const output = renderFrame(forest, 80, {
+      spriteOverride: { treeId: 1, sprite: getSprite("oak", 1.0) },
+      groundOverlay: { treeX: 20, overlays: overlay },
+    });
+    assert.equal(typeof output, "string");
+    assert.ok(output.includes("░"), "should contain ground overlay characters");
   });
 });
