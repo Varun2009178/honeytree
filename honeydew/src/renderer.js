@@ -354,6 +354,24 @@ export function renderFrame(forest, termWidth = 80, options = {}) {
     }
   }
 
+  // Ground pulse — brighten all ground pixels by 30% during planting flash
+  const groundPulse = options.groundPulse ?? false;
+  if (groundPulse) {
+    for (let rowIndex = 0; rowIndex < GROUND_ROWS; rowIndex += 1) {
+      for (let x = 0; x < virtualWidth; x += 1) {
+        const cell = buffer[groundStart + rowIndex][x];
+        if (cell.color) {
+          const c = parseHex(cell.color);
+          cell.color = toHex({
+            r: Math.min(255, c.r + (255 - c.r) * 0.3),
+            g: Math.min(255, c.g + (255 - c.g) * 0.3),
+            b: Math.min(255, c.b + (255 - c.b) * 0.3),
+          });
+        }
+      }
+    }
+  }
+
   renderGroundDetails(buffer, biome, virtualWidth, groundStart);
 
   applyFog(buffer, wilt, virtualWidth);

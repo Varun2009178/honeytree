@@ -90,3 +90,19 @@ describe("animation engine", () => {
     assert.ok(seedPixels < fullPixels);
   });
 });
+
+describe("groundPulse flag", () => {
+  it("sets groundPulse=true on the first 3 frames", () => {
+    const frames = getAnimationFrames("oak", 1.0, 40);
+    assert.equal(frames[0].groundPulse, true);
+    assert.equal(frames[1].groundPulse, true);
+    assert.equal(frames[2].groundPulse, true);
+  });
+
+  it("sets groundPulse=false after frame 3", () => {
+    const frames = getAnimationFrames("oak", 1.0, 40);
+    assert.equal(frames[3].groundPulse, false);
+    assert.equal(frames[10].groundPulse, false);
+    assert.equal(frames[39].groundPulse, false);
+  });
+});

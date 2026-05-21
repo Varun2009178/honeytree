@@ -257,3 +257,15 @@ describe("wind sway", () => {
     assert.notEqual(tick3, tick5);
   });
 });
+
+describe("groundPulse", () => {
+  it("brightens ground pixels when groundPulse is true", () => {
+    const forest = {
+      ...EMPTY_FOREST,
+      trees: [{ id: 1, type: "oak", growth: 1, x: 20, plantedAt: EMPTY_FOREST.createdAt }],
+    };
+    const normal = renderFrame(forest, 80, { groundPulse: false });
+    const pulsed = renderFrame(forest, 80, { groundPulse: true });
+    assert.notEqual(normal, pulsed);
+  });
+});

@@ -141,9 +141,9 @@ export function getAnimationFrames(type, growth, frameCount = 40) {
     }
 
     if (i === frameCount - 1) {
-      frames.push({ sprite: finalSprite, groundOverlay: null });
+      frames.push({ sprite: finalSprite, groundOverlay: null, groundPulse: false });
     } else {
-      frames.push({ sprite, groundOverlay });
+      frames.push({ sprite, groundOverlay, groundPulse: i < 3 });
     }
   }
 

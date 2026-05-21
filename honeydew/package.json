@@ -11,7 +11,7 @@
     "src"
   ],
   "scripts": {
-    "test": "node --test test/*.test.js"
+    "test": "FORCE_COLOR=1 node --test test/*.test.js"
   },
   "keywords": [
     "cli",
