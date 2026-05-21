@@ -78,6 +78,7 @@ export async function viewer() {
 
   let viewportX = forest.viewportX || 0;
   const PAN_STEP = 4;
+  let windTick = 0;
 
   function getViewportWidth() {
     return process.stdout.columns || 80;
@@ -96,6 +97,7 @@ export async function viewer() {
       twinkleSeed,
       viewportX,
       virtualWidth: vw,
+      windTick,
     }));
   }
 
@@ -144,7 +146,22 @@ export async function viewer() {
   clearScreen();
   renderForest(forest);
 
+  const windInterval = setInterval(() => {
+    if (animating) return;
+    windTick += 1;
+    moveHome();
+    const termWidth = process.stdout.columns || 80;
+    const vw = getVirtualWidth(forest.trees.length, termWidth);
+    process.stdout.write(renderFrame(forest, termWidth, {
+      twinkleSeed: windTick,
+      viewportX,
+      virtualWidth: vw,
+      windTick,
+    }));
+  }, 2500);
+
   const cleanup = () => {
+    clearInterval(windInterval);
     // Persist viewport position for next session
     forest.viewportX = viewportX;
     ignoreNextChange = true;
