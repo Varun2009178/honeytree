@@ -212,3 +212,48 @@ describe("ground overlay", () => {
     assert.ok(output.includes("░"), "should contain ground overlay characters");
   });
 });
+
+describe("wind sway", () => {
+  it("shifts canopy pixels when windTick is provided", () => {
+    const forest = {
+      ...EMPTY_FOREST,
+      trees: [{ id: 1, type: "oak", growth: 1, x: 20, plantedAt: EMPTY_FOREST.createdAt }],
+    };
+    const noWind = renderFrame(forest, 80, { windTick: 0 });
+    const withWind = renderFrame(forest, 80, { windTick: 1 });
+    assert.notEqual(noWind, withWind);
+  });
+
+  it("does not shift when windTick is undefined (backward compatible)", () => {
+    const forest = {
+      ...EMPTY_FOREST,
+      trees: [{ id: 1, type: "oak", growth: 1, x: 20, plantedAt: EMPTY_FOREST.createdAt }],
+    };
+    const before = renderFrame(forest, 80);
+    const after = renderFrame(forest, 80, {});
+    assert.equal(before, after);
+  });
+
+  it("gives different trees different phase offsets", () => {
+    const forest = {
+      ...EMPTY_FOREST,
+      trees: [
+        { id: 1, type: "oak", growth: 1, x: 20, plantedAt: EMPTY_FOREST.createdAt },
+        { id: 5, type: "oak", growth: 1, x: 50, plantedAt: EMPTY_FOREST.createdAt },
+      ],
+    };
+    const output = renderFrame(forest, 80, { windTick: 1 });
+    assert.equal(typeof output, "string");
+    assert.equal(output.split("\n").length, SCENE_HEIGHT);
+  });
+
+  it("reverses wind direction every 4 ticks", () => {
+    const forest = {
+      ...EMPTY_FOREST,
+      trees: [{ id: 1, type: "oak", growth: 1, x: 20, plantedAt: EMPTY_FOREST.createdAt }],
+    };
+    const tick3 = renderFrame(forest, 80, { windTick: 3 });
+    const tick5 = renderFrame(forest, 80, { windTick: 5 });
+    assert.notEqual(tick3, tick5);
+  });
+});

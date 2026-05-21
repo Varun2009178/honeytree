@@ -160,6 +160,14 @@ function getTreeYOffset(treeId) {
   return h % 2; // Returns 0 or 1 (only up, never below ground)
 }
 
+function getWindOffset(treeId, windTick) {
+  if (windTick == null) return 0;
+  const windDirection = Math.floor(windTick / 4) % 2 === 0 ? 1 : -1;
+  const treePhase = hash(treeId * 7) % 3;
+  const effectiveTick = Math.max(0, windTick - treePhase);
+  return (effectiveTick % 2 === 0) ? 0 : windDirection;
+}
+
 function generateStars(width, biome, twinkle = 0) {
   const stars = [];
   for (let x = 0; x < width; x += 1) {
@@ -175,14 +183,16 @@ function generateStars(width, biome, twinkle = 0) {
   return stars;
 }
 
-function compositeSprite(buffer, sprite, centerX, baseY) {
+function compositeSprite(buffer, sprite, centerX, baseY, canopyShiftX = 0) {
   const offsetX = centerX - Math.floor(sprite.width / 2);
+  const trunkRows = 2;
   for (let rowIndex = 0; rowIndex < sprite.rows.length; rowIndex += 1) {
     const targetY = baseY - rowIndex;
     if (targetY < 0 || targetY >= buffer.length) continue;
     const row = sprite.rows[rowIndex];
+    const shiftX = rowIndex < trunkRows ? 0 : canopyShiftX;
     for (let columnIndex = 0; columnIndex < row.length; columnIndex += 1) {
-      const targetX = offsetX + columnIndex;
+      const targetX = offsetX + columnIndex + shiftX;
       if (targetX < 0 || targetX >= buffer[0].length) continue;
       const [char, color] = row[columnIndex];
       if (!color) continue;
@@ -320,6 +330,7 @@ export function renderFrame(forest, termWidth = 80, options = {}) {
     }
   }
 
+  const windTick = options.windTick ?? null;
   const treeBaseY = groundStart - 1;
   const spriteOverride = options.spriteOverride ?? null;
   for (const tree of forest.trees) {
@@ -327,7 +338,8 @@ export function renderFrame(forest, termWidth = 80, options = {}) {
     const sprite = (spriteOverride && spriteOverride.treeId === tree.id)
       ? spriteOverride.sprite
       : getSprite(tree.type, tree.growth);
-    compositeSprite(buffer, sprite, tree.x, treeBaseY - yOffset);
+    const canopyShiftX = getWindOffset(tree.id, windTick);
+    compositeSprite(buffer, sprite, tree.x, treeBaseY - yOffset, canopyShiftX);
   }
 
   // Apply ground overlay (soil reaction during tree birth animation)
