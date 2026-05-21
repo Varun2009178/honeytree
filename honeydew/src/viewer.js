@@ -125,6 +125,7 @@ export async function viewer() {
         viewportX,
         virtualWidth: vw,
         spriteOverride: { treeId: tree.id, sprite: frameData.sprite },
+        groundPulse: frameData.groundPulse ?? false,
       };
 
       if (frameData.groundOverlay) {
