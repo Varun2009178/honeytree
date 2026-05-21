@@ -58,7 +58,7 @@ export const ANIMATION_KEYFRAMES = {
 `,
         { "*": "#a4e28d", ".": null },
       ),
-      groundEffect: { radius: 3, color: "#4a5a48" },
+      groundEffect: { radius: 5, color: "#f5c842" },
     },
 
     // KF2 (0.5s): Trunk base appears - 2 rows of trunk
@@ -223,7 +223,7 @@ bgGGGGg
 `,
         { "*": "#4a7a3a", ".": null },
       ),
-      groundEffect: { radius: 3, color: "#3a4a38" },
+      groundEffect: { radius: 5, color: "#f5c842" },
     },
 
     // KF2 (0.5s): Trunk base appears - 2 rows of trunk
@@ -404,7 +404,7 @@ gGGGGGGg
 `,
         { "*": "#c4e2ba", ".": null },
       ),
-      groundEffect: { radius: 2.5, color: "#d4d6d2" },
+      groundEffect: { radius: 5, color: "#f5c842" },
     },
 
     // KF2 (0.5s): Trunk base appears - 2 rows, pale white
@@ -568,7 +568,7 @@ hgggh..
 `,
         { "*": "#9ac98a", ".": null },
       ),
-      groundEffect: { radius: 4, color: "#4a5a48" },
+      groundEffect: { radius: 5, color: "#f5c842" },
     },
 
     // KF2 (0.5s): Trunk base appears - 2 rows
@@ -740,7 +740,7 @@ ggggg gg...
 `,
         { "*": "#f0d0e0", ".": null },
       ),
-      groundEffect: { radius: 3, color: "#5a4a48" },
+      groundEffect: { radius: 5, color: "#f5c842" },
     },
 
     // KF2 (0.5s): Trunk base appears - 2 rows, light trunk

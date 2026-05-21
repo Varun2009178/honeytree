@@ -66,4 +66,19 @@ describe("animation keyframes", () => {
       });
     });
   }
+
+  describe("enhanced ground effect", () => {
+    for (const type of ["oak", "pine", "birch", "willow", "cherry"]) {
+      it(`${type} KF1 has ground effect radius of 5`, () => {
+        const kf1 = ANIMATION_KEYFRAMES[type][0];
+        assert.ok(kf1.groundEffect, `${type} KF1 should have groundEffect`);
+        assert.equal(kf1.groundEffect.radius, 5);
+      });
+
+      it(`${type} KF1 uses bright gold sparkle color`, () => {
+        const kf1 = ANIMATION_KEYFRAMES[type][0];
+        assert.equal(kf1.groundEffect.color, "#f5c842");
+      });
+    }
+  });
 });
