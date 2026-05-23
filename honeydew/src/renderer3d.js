@@ -71,7 +71,7 @@ export function rasterize(buf, projectedPoints, depthRange = null) {
     const dimmedColor = lerpColor(p.color, BG_COLOR, dimFactor);
 
     // Point splatting — closer points splat larger (2x2 for near, 1x1 for far)
-    const splatRadius = t < 0.5 ? 1 : 0;
+    const splatRadius = t < 0.3 ? 2 : t < 0.7 ? 1 : 0;
 
     for (let dy = -splatRadius; dy <= splatRadius; dy++) {
       for (let dx = -splatRadius; dx <= splatRadius; dx++) {
