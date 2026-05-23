@@ -1,7 +1,7 @@
 import { scanCodebase } from "./scanner.js";
 import { generateForestCloud, generateGroundPlane } from "./pointcloud.js";
 import { createCamera, rotatePoint, projectPoint, clampElevation, clampAzimuth } from "./camera.js";
-import { createFrameBuffer, rasterize, renderBufferToString, renderStatusBar } from "./renderer3d.js";
+import { createFrameBuffer, rasterize, renderBufferToString, renderTopBar, renderStatusBar } from "./renderer3d.js";
 
 export function createForestWatcher(filePath, onChange) {
   try {
@@ -82,11 +82,11 @@ export async function viewer(targetDir) {
   let needsRedraw = true;
 
   let screenWidth = process.stdout.columns || 80;
-  let screenHeight = (process.stdout.rows || 24) - 1;
+  let screenHeight = (process.stdout.rows || 24) - 2;
 
   function renderFrame() {
     screenWidth = process.stdout.columns || 80;
-    screenHeight = (process.stdout.rows || 24) - 1;
+    screenHeight = (process.stdout.rows || 24) - 2;
 
     const buf = createFrameBuffer(screenWidth, screenHeight);
 
@@ -106,9 +106,11 @@ export async function viewer(targetDir) {
     rasterize(buf, projected);
 
     moveHome();
+    process.stdout.write(renderTopBar(hoveredFile, screenWidth));
+    process.stdout.write("\n");
     process.stdout.write(renderBufferToString(buf));
     process.stdout.write("\n");
-    process.stdout.write(renderStatusBar(hoveredFile, files.length, screenWidth));
+    process.stdout.write(renderStatusBar(files.length, screenWidth));
 
     return buf;
   }
@@ -253,16 +255,15 @@ export async function viewer(targetDir) {
       }
 
       if (mouse.button === 35 || (mouse.button >= 32 && mouse.released === false && !mouseDown)) {
-        const sy = mouse.y;
+        const sy = mouse.y - 1;
         const sx = mouse.x;
         if (currentBuf && sy >= 0 && sy < currentBuf.height && sx >= 0 && sx < currentBuf.width) {
           const fi = currentBuf.fileIndices[sy][sx];
           const newHover = fi >= 0 ? filePaths[fi] : "";
           if (newHover !== hoveredFile) {
             hoveredFile = newHover;
-            const statusY = screenHeight + 1;
-            writeAnsi(`\x1b[${statusY};1H`);
-            process.stdout.write(renderStatusBar(hoveredFile, files.length, screenWidth));
+            writeAnsi(`\x1b[1;1H`);
+            process.stdout.write(renderTopBar(hoveredFile, screenWidth));
           }
         }
       }

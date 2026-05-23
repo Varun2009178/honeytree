@@ -112,17 +112,15 @@ export function renderBufferToString(buf, bgColor = BG_COLOR) {
   return lines.join("\n");
 }
 
-export function renderStatusBar(hoveredFile, fileCount, width) {
-  const leftPart = hoveredFile
-    ? ` ${hoveredFile}`
-    : "";
+export function renderTopBar(hoveredFile, width) {
+  if (!hoveredFile) return " ".repeat(width);
+  const label = ` ${hoveredFile} `;
+  const pad = Math.max(0, Math.floor((width - label.length) / 2));
+  return " ".repeat(pad) + chalk.hex("#f5a50b")(label) + " ".repeat(Math.max(0, width - pad - label.length));
+}
+
+export function renderStatusBar(fileCount, width) {
   const rightPart = `${fileCount} files  |  drag to rotate  |  +/- zoom  |  q quit  r rescan `;
-
-  const padding = Math.max(0, width - leftPart.length - rightPart.length);
-
-  return (
-    chalk.hex("#f5a50b")(leftPart) +
-    " ".repeat(padding) +
-    chalk.hex("#8e8a84")(rightPart)
-  );
+  const padding = Math.max(0, width - rightPart.length);
+  return " ".repeat(padding) + chalk.hex("#8e8a84")(rightPart);
 }
