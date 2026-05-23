@@ -1,7 +1,7 @@
 {
   "name": "honeytree",
   "version": "1.1.6",
-  "description": "Grow a forest in your terminal every time you use Claude Code",
+  "description": "Your codebase is a forest — 3D terminal visualization of any codebase",
   "type": "module",
   "bin": {
     "honeytree": "./bin/honeydew.js"
@@ -17,10 +17,11 @@
     "cli",
     "terminal",
     "forest",
-    "claude-code",
-    "pixel-art",
-    "ascii-art",
-    "hooks"
+    "3d",
+    "codebase",
+    "visualization",
+    "point-cloud",
+    "ascii-art"
   ],
   "repository": {
     "type": "git",
@@ -33,8 +34,7 @@
   "author": "Varun Nukala",
   "license": "MIT",
   "dependencies": {
-    "chalk": "^5.4.1",
-    "honeytree": "^1.1.5"
+    "chalk": "^5.4.1"
   },
   "engines": {
     "node": ">=18"

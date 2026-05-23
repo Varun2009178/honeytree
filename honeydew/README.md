@@ -1,188 +1,88 @@
 # Honeytree
 
+> *your codebase is a forest*
+
 [![npm version](https://img.shields.io/npm/v/honeytree.svg)](https://www.npmjs.com/package/honeytree)
 [![license](https://img.shields.io/npm/l/honeytree.svg)](https://github.com/Varun2009178/honeytree/blob/main/LICENSE)
 
-Grow a pixel-art forest in your terminal every time you use Claude Code.
+A 3D forest that grows from your codebase. Every file becomes a tree — rendered as a rotatable point cloud right in your terminal using block characters (░▒▓█).
 
-Each prompt plants a new tree. Each tree grows over time. Your forest evolves from a quiet clearing into an ancient woodland — and it never resets.
+No browser. No app. No install beyond npm.
+
+```bash
+npx honeytree
+```
+
+That's it. One command. Run it in any project directory.
 
 ---
 
-## Quick Start
+## What You See
+
+- Each **file** is a **tree**
+- **Tree height** = file size (bigger files are taller)
+- **Tree species/color** = file type
+- **Canopy density** = git churn (more commits = denser canopy)
+- **Spatial layout** = directory structure (files in the same folder cluster together)
+
+### Species
+
+| Extension | Species | Color | Shape |
+|-----------|---------|-------|-------|
+| `.js` `.jsx` `.mjs` | Oak | Bright green | Wide ellipsoid |
+| `.ts` `.tsx` | Pine | Teal | Narrow cone |
+| `.css` `.scss` | Birch | Pink | Slim ellipsoid |
+| `.py` | Willow | Lime green | Drooping |
+| `.md` `.json` `.yaml` | Cherry | Pink-purple | Sphere |
+
+---
+
+## Controls
+
+| Input | Action |
+|-------|--------|
+| Mouse drag | Rotate the forest |
+| `+` / `=` | Zoom in |
+| `-` / `_` | Zoom out |
+| Arrow keys | Rotate camera |
+| Hover | Show file path (displayed at top) |
+| `r` | Rescan codebase |
+| `q` | Quit |
+
+---
+
+## Install Globally (optional)
 
 ```bash
 npm install -g honeytree
-honeytree init
 honeytree
 ```
 
-That's it. Three commands:
+Or point it at a specific directory:
 
-1. **Install** the CLI globally
-2. **Init** creates your forest file and registers a Claude Code hook
-3. **Run the viewer** in a separate terminal to watch your forest grow
-
-After setup, trees are planted automatically after every Claude Code response. No manual steps needed.
+```bash
+honeytree view ~/my-project
+```
 
 ---
 
 ## How It Works
 
-When you run `honeytree init`, it does two things:
+A custom terminal-based 3D engine:
 
-- Creates `~/.honeydew/forest.json` to store your forest state
-- Adds a `Stop` hook to `~/.claude/settings.json` that runs after every Claude Code response
+1. **Scanner** — walks your project, collects file metadata (size, extension, git history)
+2. **Point cloud** — generates 3D points for each tree based on species shape
+3. **Camera** — orbital rotation with perspective projection
+4. **Rasterizer** — z-buffer depth sorting, block character shading, point splatting
 
-From then on, every time Claude Code responds to a prompt, a new tree is planted in your forest automatically. Open the viewer in a second terminal to watch them grow in real time.
-
----
-
-## Streaks
-
-Honeytree tracks your coding streak — consecutive days where you use Claude Code.
-
-- **Active streak**: The viewer and badge show your current streak count (e.g. `7-day streak`)
-- **Broken streak**: Miss a day and your forest starts **wilting** — trees desaturate toward brown, and fog rolls in across the scene
-- **Recovery**: Your next prompt resets the streak to 1 and clears the wilting immediately
-
-The longer you go without coding, the worse it gets:
-
-| Days idle | Effect |
-|----------:|--------|
-| 1 | Light desaturation, sparse fog |
-| 2 | Noticeable browning, moderate fog |
-| 3 | Heavy browning, dense fog |
-| 4+ | Near-dead forest, thick fog |
-
-Plant a tree to bring it all back to life.
-
----
-
-## Badge
-
-Generate a badge for your GitHub README that shows your forest stats and links back to [Honeytree](https://github.com/Varun2009178/honeytree):
-
-```bash
-honeytree badge
-```
-
-This creates a `honeytree-badge.svg` file in your current directory and prints the markdown to embed it:
-
-```markdown
-[![honeytree](./honeytree-badge.svg)](https://github.com/Varun2009178/honeytree)
-```
-
-The badge displays your tree count and streak status. It links to the [Honeytree repo](https://github.com/Varun2009178/honeytree) so anyone who sees it can install it themselves.
-
-| State | Badge color | Example |
-|-------|-------------|---------|
-| Active streak | Green | `42 trees · 7d streak` |
-| Wilting | Orange-red | `42 trees · wilting` |
-| No streak data | Grey | `42 trees` |
-
-Re-run `honeytree badge` any time to update the SVG with your latest stats. Commit it to your repo to keep it current.
-
----
-
-## FOREST.md
-
-Generate a shareable markdown snapshot of your forest:
-
-```bash
-honeytree md
-```
-
-This creates a `FOREST.md` in your current directory with:
-
-- Your Honeytree badge (links to the [Honeytree repo](https://github.com/Varun2009178/honeytree))
-- Stats: tree count, streak, biome
-- A plain-text rendering of your forest (tree silhouettes, stars, ground)
-- Total prompts and forest age
-
-Commit `FOREST.md` to your repo root so your team can see the forest. When teammates see it, they can install Honeytree themselves — one install spreads to the whole team.
-
-Run `honeytree badge` first to generate the SVG, then `honeytree md` to generate the markdown that embeds it.
-
----
-
-## Biomes
-
-Your forest evolves visually as it grows — the sky, ground, and atmosphere all change:
-
-| Trees | Biome | What changes |
-|------:|-------|-------------|
-| 0–9 | Clearing | Sparse stars, light ground |
-| 10–24 | Grove | More stars, richer ground |
-| 25–49 | Woodland | Dense canopy, varied starlight |
-| 50–99 | Old Growth | Deep greens, warm starlight |
-| 100+ | Ancient Forest | Richest palette, brightest sky |
-
-Trees are never deleted. The forest only grows.
-
----
-
-## Tree Species
-
-Five species are randomly assigned when a tree is planted:
-
-| Species | Look |
-|---------|------|
-| Oak | Wide, rounded canopy |
-| Pine | Tall, triangular shape |
-| Birch | Light trunk, bright leaves |
-| Willow | Drooping canopy |
-| Cherry | Pink blossoms |
-
-Each species has 4 growth stages (seed, sapling, young, full). Existing trees grow a little with each new prompt.
-
----
-
-## CLI Reference
-
-| Command | Description |
-|---------|-------------|
-| `honeytree init` | Create forest and register Claude Code hook |
-| `honeytree` | Launch the live viewer |
-| `honeytree plant` | Plant a tree manually (normally runs via hook) |
-| `honeytree badge` | Generate `honeytree-badge.svg` in current directory |
-| `honeytree md` | Generate `FOREST.md` in current directory |
-
----
-
-## Viewer
-
-The viewer adapts to your terminal width — expand your terminal and new trees will spread across the full width.
-
-Use **left/right arrow keys** to pan across the full forest canvas. When a new tree is planted, the viewer automatically scrolls to center on it. A minimap in the stats bar shows your current position.
-
-Press `Ctrl+C` or `q` to exit. The viewer shows a summary of your forest when you close it.
-
-### Reading the Stats Bar
-
-Below your forest you'll see a stats bar like this:
-
-```
- honeytree · 42 trees · 7-day streak · ████████░░░░ next: oak [woodland]
-```
-
-Here's what each part means:
-
-| Segment | What it tells you |
-|---------|-------------------|
-| `42 trees` | Total trees in your forest — one planted per prompt, never deleted |
-| `7-day streak` | Consecutive days you've used Claude Code. Resets to 1 if you skip a day |
-| `wilting (2d idle)` | Appears instead of streak when you've been inactive — your forest is dying |
-| `████████░░░░` | Progress bar toward the next milestone (10, 25, 50, 100, 250, 500, 1000 trees) |
-| `next: oak` | The species of the next tree that will be planted |
-| `[woodland]` | Your current biome — evolves as your tree count grows |
+Everything renders to Unicode block characters with 24-bit true color. No WebGL, no canvas, no browser — just your terminal.
 
 ---
 
 ## Requirements
 
 - Node.js 18+
-- [Claude Code](https://claude.com/claude-code) (for the automatic hook)
+- A terminal with true color support (most modern terminals)
 
 ## Links
 
