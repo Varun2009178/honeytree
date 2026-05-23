@@ -1,5 +1,7 @@
 import chalk from "chalk";
 
+chalk.level = 3; // force 24-bit true color
+
 const BLOCK_CHARS = ["█", "▓", "▒", "░"];
 const BG_COLOR = "#0a0a1a";
 
