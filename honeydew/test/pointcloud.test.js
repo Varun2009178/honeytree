@@ -148,7 +148,7 @@ describe("pointcloud", () => {
 
   describe("LOD", () => {
     it("reduces points per tree when total exceeds threshold", () => {
-      const files = Array.from({ length: 100 }, (_, i) => ({
+      const files = Array.from({ length: 500 }, (_, i) => ({
         relativePath: `src/file${i}.js`,
         extension: ".js",
         size: 2000,
@@ -156,7 +156,7 @@ describe("pointcloud", () => {
         directory: "src",
       }));
       const result = generateForestCloud(files);
-      const avgPointsPerFile = result.points.length / 100;
+      const avgPointsPerFile = result.points.length / 500;
 
       const smallFiles = files.slice(0, 5);
       const smallResult = generateForestCloud(smallFiles);

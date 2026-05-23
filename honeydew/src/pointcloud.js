@@ -47,14 +47,14 @@ export function generateTreeCloud(file, position, fileIndex = 0, lodScale = 1) {
   const rng = seededRandom(seed);
 
   const sizeLog = Math.log2(Math.max(1, file.size));
-  const basePoints = Math.round(30 + sizeLog * 5);
+  const basePoints = Math.round(150 + sizeLog * 25);
   const churnMultiplier = 1 + Math.min(1, (file.churn || 0) / 30);
   const canopyCount = Math.round(basePoints * churnMultiplier * lodScale);
 
-  const height = 2 + sizeLog * 0.5;
+  const height = 3 + sizeLog * 0.8;
   const canopyCenterY = height;
-  const canopyRadiusX = (height * 0.4) * species.widthScale;
-  const canopyRadiusY = (height * 0.35) * species.heightScale;
+  const canopyRadiusX = (height * 0.6) * species.widthScale;
+  const canopyRadiusY = (height * 0.5) * species.heightScale;
   const canopyRadiusZ = canopyRadiusX;
 
   const points = [];
@@ -105,13 +105,13 @@ export function generateTreeCloud(file, position, fileIndex = 0, lodScale = 1) {
     });
   }
 
-  const trunkCount = Math.round((3 + height * 0.8) * Math.max(0.5, lodScale));
+  const trunkCount = Math.round((8 + height * 2) * Math.max(0.5, lodScale));
   for (let i = 0; i < trunkCount; i++) {
     const t = i / trunkCount;
     points.push({
-      x: position.x + (rng() - 0.5) * 0.3,
+      x: position.x + (rng() - 0.5) * 0.5,
       y: t * (canopyCenterY - canopyRadiusY * 0.5),
-      z: position.z + (rng() - 0.5) * 0.3,
+      z: position.z + (rng() - 0.5) * 0.5,
       color: TRUNK_COLOR,
       fileIndex,
     });
@@ -133,8 +133,8 @@ export function generateForestCloud(files) {
   const totalFiles = files.length;
   const spreadRadius = Math.max(10, Math.sqrt(totalFiles) * 3);
 
-  const MAX_POINTS = 30000;
-  const estimatedPointsPerFile = 305;
+  const MAX_POINTS = 80000;
+  const estimatedPointsPerFile = 400;
   const estimatedTotal = totalFiles * estimatedPointsPerFile;
   const lodScale = estimatedTotal > MAX_POINTS ? MAX_POINTS / estimatedTotal : 1;
 
@@ -165,7 +165,7 @@ export function generateForestCloud(files) {
 
 export function generateGroundPlane(radius) {
   const points = [];
-  const step = 1.5;
+  const step = 0.7;
   const groundColors = ["#3a2a1a", "#4a3a2a", "#352515", "#2a1a0a"];
 
   for (let x = -radius; x <= radius; x += step) {

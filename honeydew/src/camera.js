@@ -32,7 +32,7 @@ export function projectPoint(x, y, z, screenWidth, screenHeight) {
   const fovRad = fov * DEG_TO_RAD;
   const focalLength = screenHeight / (2 * Math.tan(fovRad / 2));
 
-  const zView = z - 40;
+  const zView = z - 25;
 
   if (zView >= -1) {
     return { screenX: -1, screenY: -1, depth: Infinity, visible: false };
