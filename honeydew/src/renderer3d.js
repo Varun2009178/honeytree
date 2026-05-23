@@ -64,21 +64,31 @@ export function rasterize(buf, projectedPoints, depthRange = null) {
     const sx = p.screenX;
     const sy = p.screenY;
 
-    if (sx < 0 || sx >= buf.width || sy < 0 || sy >= buf.height) continue;
+    const t = (p.depth - minDepth) / depthSpan;
+    const charIndex = t === 0 ? 0 : Math.min(BLOCK_CHARS.length - 1, Math.ceil(t * BLOCK_CHARS.length) - 1);
+    const blockChar = BLOCK_CHARS[charIndex];
+    const dimFactor = t * 0.6;
+    const dimmedColor = lerpColor(p.color, BG_COLOR, dimFactor);
 
-    if (p.depth < buf.depth[sy][sx]) {
-      buf.depth[sy][sx] = p.depth;
-      buf.fileIndices[sy][sx] = p.fileIndex;
+    // Point splatting — closer points splat larger (2x2 for near, 1x1 for far)
+    const splatRadius = t < 0.5 ? 1 : 0;
 
-      const t = (p.depth - minDepth) / depthSpan;
-      // Map t in [0,1] to char indices [0,3]. Use ceil-1 so t=0.25 maps to index 0
-      const charIndex = t === 0 ? 0 : Math.min(BLOCK_CHARS.length - 1, Math.ceil(t * BLOCK_CHARS.length) - 1);
-      const blockChar = BLOCK_CHARS[charIndex];
+    for (let dy = -splatRadius; dy <= splatRadius; dy++) {
+      for (let dx = -splatRadius; dx <= splatRadius; dx++) {
+        const px = sx + dx;
+        const py = sy + dy;
 
-      const dimFactor = t * 0.6;
-      const dimmedColor = lerpColor(p.color, BG_COLOR, dimFactor);
+        if (px < 0 || px >= buf.width || py < 0 || py >= buf.height) continue;
 
-      buf.chars[sy][sx] = { char: blockChar, color: dimmedColor };
+        if (p.depth < buf.depth[py][px]) {
+          buf.depth[py][px] = p.depth;
+          buf.fileIndices[py][px] = p.fileIndex;
+
+          // Edge pixels of splat use lighter block char
+          const edgeChar = (dx === 0 && dy === 0) ? blockChar : BLOCK_CHARS[Math.min(BLOCK_CHARS.length - 1, charIndex + 1)];
+          buf.chars[py][px] = { char: edgeChar, color: dimmedColor };
+        }
+      }
     }
   }
 }
