@@ -51,7 +51,7 @@ export function generateTreeCloud(file, position, fileIndex = 0, lodScale = 1) {
   const churnMultiplier = 1 + Math.min(1, (file.churn || 0) / 30);
   const canopyCount = Math.round(basePoints * churnMultiplier * lodScale);
 
-  const height = 3 + sizeLog * 0.8;
+  const height = 5 + sizeLog * 1.1;
   const canopyCenterY = height;
   const canopyRadiusX = (height * 0.45) * species.widthScale;
   const canopyRadiusY = (height * 0.5) * species.heightScale;
