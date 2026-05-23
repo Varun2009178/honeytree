@@ -6,7 +6,7 @@ export function createCamera() {
   return {
     azimuth: 45,
     elevation: 30,
-    distance: 40,
+    distance: 60,
   };
 }
 

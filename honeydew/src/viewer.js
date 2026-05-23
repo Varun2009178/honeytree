@@ -70,7 +70,7 @@ export async function viewer(targetDir) {
   }
 
   const { points: treePoints, filePaths } = generateForestCloud(files);
-  const groundRadius = Math.max(15, Math.sqrt(files.length) * 4);
+  const groundRadius = Math.max(25, Math.sqrt(files.length) * 7);
   const groundPoints = generateGroundPlane(groundRadius);
   const allPoints = [...treePoints, ...groundPoints];
 
@@ -174,7 +174,7 @@ export async function viewer(targetDir) {
         files.length = 0;
         files.push(...newFiles);
         const { points: newTreePoints, filePaths: newPaths } = generateForestCloud(files);
-        const newGround = generateGroundPlane(Math.max(15, Math.sqrt(files.length) * 4));
+        const newGround = generateGroundPlane(Math.max(25, Math.sqrt(files.length) * 7));
         allPoints.length = 0;
         allPoints.push(...newTreePoints, ...newGround);
         filePaths.length = 0;

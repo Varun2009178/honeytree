@@ -53,7 +53,7 @@ export function generateTreeCloud(file, position, fileIndex = 0, lodScale = 1) {
 
   const height = 3 + sizeLog * 0.8;
   const canopyCenterY = height;
-  const canopyRadiusX = (height * 0.6) * species.widthScale;
+  const canopyRadiusX = (height * 0.45) * species.widthScale;
   const canopyRadiusY = (height * 0.5) * species.heightScale;
   const canopyRadiusZ = canopyRadiusX;
 
@@ -131,7 +131,7 @@ export function generateForestCloud(files) {
 
   const dirs = Object.keys(dirGroups);
   const totalFiles = files.length;
-  const spreadRadius = Math.max(10, Math.sqrt(totalFiles) * 3);
+  const spreadRadius = Math.max(20, Math.sqrt(totalFiles) * 8);
 
   const MAX_POINTS = 80000;
   const estimatedPointsPerFile = 400;
@@ -143,11 +143,11 @@ export function generateForestCloud(files) {
 
   dirs.forEach((dir, dirIndex) => {
     const angle = (dirIndex / dirs.length) * Math.PI * 2;
-    const clusterCenterX = Math.cos(angle) * spreadRadius * 0.5;
-    const clusterCenterZ = Math.sin(angle) * spreadRadius * 0.5;
+    const clusterCenterX = Math.cos(angle) * spreadRadius * 0.6;
+    const clusterCenterZ = Math.sin(angle) * spreadRadius * 0.6;
 
     const group = dirGroups[dir];
-    const clusterSpread = Math.max(3, Math.sqrt(group.length) * 2);
+    const clusterSpread = Math.max(8, Math.sqrt(group.length) * 6);
 
     group.forEach((entry, fileInGroup) => {
       const seed = hashString(entry.file.relativePath);
