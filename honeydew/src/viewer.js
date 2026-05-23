@@ -93,7 +93,7 @@ export async function viewer(targetDir) {
     const projected = [];
     for (const p of allPoints) {
       const [rx, ry, rz] = rotatePoint(p.x, p.y, p.z, camera.azimuth, camera.elevation);
-      const proj = projectPoint(rx, ry, rz, screenWidth, screenHeight);
+      const proj = projectPoint(rx, ry, rz, screenWidth, screenHeight, camera.distance);
       if (proj.visible) {
         projected.push({
           ...proj,
@@ -205,6 +205,20 @@ export async function viewer(targetDir) {
       }
       if (key === "\x1b[B") {
         camera.elevation = clampElevation(camera.elevation - 5);
+        needsRedraw = true;
+        redraw();
+        return;
+      }
+
+      // Zoom: +/= to zoom in, - to zoom out
+      if (key === "+" || key === "=") {
+        camera.distance = Math.max(10, camera.distance - 5);
+        needsRedraw = true;
+        redraw();
+        return;
+      }
+      if (key === "-" || key === "_") {
+        camera.distance = Math.min(120, camera.distance + 5);
         needsRedraw = true;
         redraw();
         return;

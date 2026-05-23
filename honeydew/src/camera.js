@@ -27,12 +27,12 @@ export function rotatePoint(x, y, z, azimuthDeg, elevationDeg) {
   return [x1, y1, z2];
 }
 
-export function projectPoint(x, y, z, screenWidth, screenHeight) {
+export function projectPoint(x, y, z, screenWidth, screenHeight, distance = 25) {
   const fov = 60;
   const fovRad = fov * DEG_TO_RAD;
   const focalLength = screenHeight / (2 * Math.tan(fovRad / 2));
 
-  const zView = z - 25;
+  const zView = z - distance;
 
   if (zView >= -1) {
     return { screenX: -1, screenY: -1, depth: Infinity, visible: false };

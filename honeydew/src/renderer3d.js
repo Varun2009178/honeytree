@@ -116,7 +116,7 @@ export function renderStatusBar(hoveredFile, fileCount, width) {
   const leftPart = hoveredFile
     ? ` ${hoveredFile}`
     : "";
-  const rightPart = `${fileCount} files  |  drag to rotate  |  q quit  r rescan `;
+  const rightPart = `${fileCount} files  |  drag to rotate  |  +/- zoom  |  q quit  r rescan `;
 
   const padding = Math.max(0, width - leftPart.length - rightPart.length);
 

@@ -1,10 +1,10 @@
 const SPECIES = {
-  oak:     { name: "oak",     colors: ["#4a8c3f", "#3d7a34", "#5a9e4a", "#6aae5a"], shape: "ellipsoid", widthScale: 1.4, heightScale: 1.0 },
-  pine:    { name: "pine",    colors: ["#2a7a6a", "#1d6a5a", "#3a8a7a", "#4a9a8a"], shape: "cone",      widthScale: 0.7, heightScale: 1.6 },
-  birch:   { name: "birch",   colors: ["#cc66aa", "#bb5599", "#dd77bb", "#ee88cc"], shape: "ellipsoid", widthScale: 0.8, heightScale: 1.0 },
-  willow:  { name: "willow",  colors: ["#88aa33", "#779922", "#99bb44", "#aacc55"], shape: "drooping",  widthScale: 1.2, heightScale: 1.0 },
-  cherry:  { name: "cherry",  colors: ["#cc8833", "#bb7722", "#dd9944", "#eeaa55"], shape: "sphere",    widthScale: 1.0, heightScale: 1.0 },
-  default: { name: "default", colors: ["#6a8a6a", "#5a7a5a", "#7a9a7a", "#8aaa8a"], shape: "ellipsoid", widthScale: 1.2, heightScale: 1.0 },
+  oak:     { name: "oak",     colors: ["#55cc44", "#44bb33", "#66dd55", "#77ee66", "#3da832"], shape: "ellipsoid", widthScale: 1.4, heightScale: 1.0 },
+  pine:    { name: "pine",    colors: ["#33bbaa", "#22aa99", "#44ccbb", "#55ddcc", "#11997a"], shape: "cone",      widthScale: 0.7, heightScale: 1.6 },
+  birch:   { name: "birch",   colors: ["#ff77cc", "#ee55bb", "#ff99dd", "#ffaaee", "#dd44aa"], shape: "ellipsoid", widthScale: 0.8, heightScale: 1.0 },
+  willow:  { name: "willow",  colors: ["#aadd44", "#99cc33", "#bbee55", "#ccff66", "#88bb22"], shape: "drooping",  widthScale: 1.2, heightScale: 1.0 },
+  cherry:  { name: "cherry",  colors: ["#ff88cc", "#ff66bb", "#ffaadd", "#ffbbee", "#ee55aa", "#ff99ff", "#dd77cc"], shape: "sphere", widthScale: 1.0, heightScale: 1.0 },
+  default: { name: "default", colors: ["#88bb88", "#77aa77", "#99cc99", "#aaddaa"], shape: "ellipsoid", widthScale: 1.2, heightScale: 1.0 },
 };
 
 const TRUNK_COLOR = "#8B6914";
