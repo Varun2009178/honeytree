@@ -14,11 +14,12 @@ if (command === "init") {
 } else if (command === "md") {
   const { generateForestMd } = await import("../src/markdown.js");
   await generateForestMd();
-} else if (!command) {
+} else if (!command || command === "view") {
+  const targetDir = !command ? process.cwd() : process.argv[3] || process.cwd();
   const { viewer } = await import("../src/viewer.js");
-  await viewer();
+  await viewer(targetDir);
 } else {
   console.error(`Unknown command: ${command}`);
-  console.error("Usage: honeytree [init|plant|badge|md]");
+  console.error("Usage: honeytree [init|plant|badge|md|view <dir>]");
   process.exit(1);
 }
