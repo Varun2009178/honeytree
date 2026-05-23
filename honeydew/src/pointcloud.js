@@ -41,7 +41,7 @@ function hashString(str) {
   return h >>> 0;
 }
 
-export function generateTreeCloud(file, position, fileIndex = 0) {
+export function generateTreeCloud(file, position, fileIndex = 0, lodScale = 1) {
   const species = getSpecies(file.extension);
   const seed = hashString(file.relativePath);
   const rng = seededRandom(seed);
@@ -49,7 +49,7 @@ export function generateTreeCloud(file, position, fileIndex = 0) {
   const sizeLog = Math.log2(Math.max(1, file.size));
   const basePoints = Math.round(30 + sizeLog * 5);
   const churnMultiplier = 1 + Math.min(1, (file.churn || 0) / 30);
-  const canopyCount = Math.round(basePoints * churnMultiplier);
+  const canopyCount = Math.round(basePoints * churnMultiplier * lodScale);
 
   const height = 2 + sizeLog * 0.5;
   const canopyCenterY = height;
@@ -105,7 +105,7 @@ export function generateTreeCloud(file, position, fileIndex = 0) {
     });
   }
 
-  const trunkCount = Math.round(3 + height * 0.8);
+  const trunkCount = Math.round((3 + height * 0.8) * Math.max(0.5, lodScale));
   for (let i = 0; i < trunkCount; i++) {
     const t = i / trunkCount;
     points.push({
@@ -133,6 +133,11 @@ export function generateForestCloud(files) {
   const totalFiles = files.length;
   const spreadRadius = Math.max(10, Math.sqrt(totalFiles) * 3);
 
+  const MAX_POINTS = 30000;
+  const estimatedPointsPerFile = 305;
+  const estimatedTotal = totalFiles * estimatedPointsPerFile;
+  const lodScale = estimatedTotal > MAX_POINTS ? MAX_POINTS / estimatedTotal : 1;
+
   const allPoints = [];
   const filePaths = files.map((f) => f.relativePath);
 
@@ -150,7 +155,7 @@ export function generateForestCloud(files) {
       const fx = clusterCenterX + (rng() - 0.5) * clusterSpread;
       const fz = clusterCenterZ + (rng() - 0.5) * clusterSpread;
 
-      const treePoints = generateTreeCloud(entry.file, { x: fx, z: fz }, entry.index);
+      const treePoints = generateTreeCloud(entry.file, { x: fx, z: fz }, entry.index, lodScale);
       allPoints.push(...treePoints);
     });
   });

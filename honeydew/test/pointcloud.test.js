@@ -145,4 +145,24 @@ describe("pointcloud", () => {
       assert.ok(points[0].color.startsWith("#"));
     });
   });
+
+  describe("LOD", () => {
+    it("reduces points per tree when total exceeds threshold", () => {
+      const files = Array.from({ length: 100 }, (_, i) => ({
+        relativePath: `src/file${i}.js`,
+        extension: ".js",
+        size: 2000,
+        churn: 10,
+        directory: "src",
+      }));
+      const result = generateForestCloud(files);
+      const avgPointsPerFile = result.points.length / 100;
+
+      const smallFiles = files.slice(0, 5);
+      const smallResult = generateForestCloud(smallFiles);
+      const avgSmall = smallResult.points.length / 5;
+
+      assert.ok(avgPointsPerFile < avgSmall);
+    });
+  });
 });
