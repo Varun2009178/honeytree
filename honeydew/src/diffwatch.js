@@ -1,47 +1,52 @@
-import { execSync } from "node:child_process";
+import { execFile } from "node:child_process";
+import fs from "node:fs";
+import path from "node:path";
 
-export function getChangedFiles(rootDir) {
+function execAsync(cmd, args, opts) {
+  return new Promise((resolve) => {
+    execFile(cmd, args, { timeout: 5000, encoding: "utf-8", ...opts }, (err, stdout) => {
+      resolve(err ? "" : stdout);
+    });
+  });
+}
+
+export async function getChangedFiles(rootDir) {
   const changed = new Set();
 
-  try {
-    const tracked = execSync("git diff --name-only", {
-      cwd: rootDir,
-      encoding: "utf-8",
-      timeout: 5000,
-      stdio: ["pipe", "pipe", "pipe"],
-    });
-    for (const line of tracked.split("\n")) {
-      const trimmed = line.trim();
-      if (trimmed) changed.add(trimmed);
-    }
+  const [tracked, untracked] = await Promise.all([
+    execAsync("git", ["diff", "--name-only"], { cwd: rootDir }),
+    execAsync("git", ["ls-files", "--others", "--exclude-standard"], { cwd: rootDir }),
+  ]);
 
-    const untracked = execSync("git ls-files --others --exclude-standard", {
-      cwd: rootDir,
-      encoding: "utf-8",
-      timeout: 5000,
-      stdio: ["pipe", "pipe", "pipe"],
-    });
-    for (const line of untracked.split("\n")) {
+  for (const output of [tracked, untracked]) {
+    for (const line of output.split("\n")) {
       const trimmed = line.trim();
       if (trimmed) changed.add(trimmed);
     }
-  } catch {
-    // Not a git repo or git not available
   }
 
   return changed;
 }
 
 export function getFileDiff(rootDir, filePath) {
+  return execAsync("git", ["diff", "-U3", "--", filePath], { cwd: rootDir });
+}
+
+export function watchForChanges(rootDir, callback) {
+  let debounceTimer = null;
+  const debounced = () => {
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(callback, 300);
+  };
+
   try {
-    const diff = execSync(`git diff -U3 -- "${filePath}"`, {
-      cwd: rootDir,
-      encoding: "utf-8",
-      timeout: 5000,
-      stdio: ["pipe", "pipe", "pipe"],
+    const watcher = fs.watch(rootDir, { recursive: true }, (event, filename) => {
+      if (!filename) return;
+      if (filename.includes("node_modules") || filename.includes(".git")) return;
+      debounced();
     });
-    return diff;
+    return watcher;
   } catch {
-    return "";
+    return null;
   }
 }

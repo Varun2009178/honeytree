@@ -3,7 +3,7 @@ import { scanCodebase } from "./scanner.js";
 import { generateForestCloud, generateGroundPlane } from "./pointcloud.js";
 import { createCamera, rotatePoint, projectPoint, clampElevation, clampAzimuth } from "./camera.js";
 import { createFrameBuffer, rasterize, renderBufferToString, renderTopBar, renderStatusBar } from "./renderer3d.js";
-import { getChangedFiles, getFileDiff } from "./diffwatch.js";
+import { getChangedFiles, getFileDiff, watchForChanges } from "./diffwatch.js";
 import { parseDiff } from "./diffparser.js";
 import { createDiffPanel, renderDiffPanel } from "./diffpanel.js";
 import { stageHunk, revertHunk } from "./diffactions.js";
@@ -90,7 +90,8 @@ export async function viewer(targetDir) {
   let changedFiles = new Set();
   let diffPanel = null;
   let diffMode = false;
-  let pollTimer = null;
+  let polling = false;
+  let watcher = null;
 
   let screenWidth = process.stdout.columns || 80;
   let screenHeight = (process.stdout.rows || 24) - 2;
@@ -160,21 +161,28 @@ export async function viewer(targetDir) {
     filePaths.push(...newPaths);
   }
 
-  function pollChanges() {
-    const newChanged = getChangedFiles(dir);
-    const changed = newChanged.size !== changedFiles.size ||
-      [...newChanged].some(f => !changedFiles.has(f));
-    changedFiles = newChanged;
+  async function pollChanges() {
+    if (polling) return;
+    polling = true;
+    try {
+      const newChanged = await getChangedFiles(dir);
+      const changed = newChanged.size !== changedFiles.size ||
+        [...newChanged].some(f => !changedFiles.has(f));
+      changedFiles = newChanged;
 
-    for (const file of files) {
-      file.changed = changedFiles.has(file.relativePath);
-    }
+      for (const file of files) {
+        file.changed = changedFiles.has(file.relativePath);
+      }
 
-    if (changed) {
-      regeneratePoints();
-      needsRedraw = true;
-      redraw();
+      if (changed) {
+        regeneratePoints();
+        needsRedraw = true;
+        redraw();
+      }
+    } catch {
+      // ignore poll errors
     }
+    polling = false;
   }
 
   function checkAllResolved() {
@@ -200,16 +208,27 @@ export async function viewer(targetDir) {
   enableMouse();
   enableMouseMotion();
 
-  pollTimer = setInterval(pollChanges, 2000);
-  pollChanges();
-
+  // Render first frame before starting change detection
   let currentBuf = renderFrame();
   needsRedraw = false;
+
+  // Start async change detection after first render
+  pollChanges();
+
+  // Watch filesystem for instant change detection
+  watcher = watchForChanges(dir, () => pollChanges());
+
+  // Fallback poll every 3 seconds in case fs.watch misses events
+  const pollTimer = setInterval(() => pollChanges(), 3000);
 
   function redraw() {
     if (!needsRedraw) return;
     needsRedraw = false;
-    currentBuf = renderFrame();
+    try {
+      currentBuf = renderFrame();
+    } catch {
+      // swallow render errors to prevent terminal corruption
+    }
   }
 
   function parseMouseEvent(data) {
@@ -226,7 +245,8 @@ export async function viewer(targetDir) {
   }
 
   const cleanup = () => {
-    if (pollTimer) clearInterval(pollTimer);
+    clearInterval(pollTimer);
+    if (watcher) watcher.close();
     disableMouseMotion();
     disableMouse();
     showCursor();
@@ -389,18 +409,19 @@ export async function viewer(targetDir) {
           const fi = currentBuf.fileIndices[sy][sx];
           if (fi >= 0 && files[fi] && files[fi].changed) {
             const filePath = filePaths[fi];
-            const diff = getFileDiff(dir, filePath);
-            if (diff) {
-              const hunks = parseDiff(diff);
-              if (hunks.length > 0) {
-                diffPanel = createDiffPanel(filePath, hunks);
-                needsRedraw = true;
-                clearScreen();
-                redraw();
-                mouseDown = false;
-                return;
+            getFileDiff(dir, filePath).then((diff) => {
+              if (diff) {
+                const hunks = parseDiff(diff);
+                if (hunks.length > 0) {
+                  diffPanel = createDiffPanel(filePath, hunks);
+                  needsRedraw = true;
+                  clearScreen();
+                  redraw();
+                }
               }
-            }
+            });
+            mouseDown = false;
+            return;
           }
         }
         mouseDown = false;

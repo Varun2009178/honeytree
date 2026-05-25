@@ -18,41 +18,41 @@ function makeTmpRepo() {
 
 describe("diffwatch", () => {
   describe("getChangedFiles", () => {
-    it("returns empty set when no changes", () => {
+    it("returns empty set when no changes", async () => {
       const dir = makeTmpRepo();
-      const result = getChangedFiles(dir);
+      const result = await getChangedFiles(dir);
       assert.equal(result.size, 0);
     });
 
-    it("returns changed file paths after modification", () => {
+    it("returns changed file paths after modification", async () => {
       const dir = makeTmpRepo();
       fs.writeFileSync(path.join(dir, "a.js"), "const x = 2;\n");
-      const result = getChangedFiles(dir);
+      const result = await getChangedFiles(dir);
       assert.ok(result.has("a.js"));
       assert.equal(result.size, 1);
     });
 
-    it("includes new untracked files", () => {
+    it("includes new untracked files", async () => {
       const dir = makeTmpRepo();
       fs.writeFileSync(path.join(dir, "b.js"), "new file\n");
-      const result = getChangedFiles(dir);
+      const result = await getChangedFiles(dir);
       assert.ok(result.has("b.js"));
     });
   });
 
   describe("getFileDiff", () => {
-    it("returns unified diff for a modified file", () => {
+    it("returns unified diff for a modified file", async () => {
       const dir = makeTmpRepo();
       fs.writeFileSync(path.join(dir, "a.js"), "const x = 2;\n");
-      const diff = getFileDiff(dir, "a.js");
+      const diff = await getFileDiff(dir, "a.js");
       assert.ok(diff.includes("@@"));
       assert.ok(diff.includes("-const x = 1;"));
       assert.ok(diff.includes("+const x = 2;"));
     });
 
-    it("returns empty string for unchanged file", () => {
+    it("returns empty string for unchanged file", async () => {
       const dir = makeTmpRepo();
-      const diff = getFileDiff(dir, "a.js");
+      const diff = await getFileDiff(dir, "a.js");
       assert.equal(diff, "");
     });
   });
