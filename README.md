@@ -4,7 +4,9 @@
 
 **Grow a pixel-art forest in your terminal every time you use Claude Code.**
 
-![Honeytree Demo](honeytree_correct_video.mp4)
+https://github.com/user-attachments/assets/b0256ab0-fafa-4898-b8c1-1a6336ec4553
+
+
 
 [![npm version](https://img.shields.io/npm/v/honeytree.svg)](https://www.npmjs.com/package/honeytree)
 [![license](https://img.shields.io/npm/l/honeytree.svg)](https://github.com/Varun2009178/honeytree/blob/main/LICENSE)
