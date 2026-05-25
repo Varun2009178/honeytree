@@ -66,4 +66,22 @@ describe("renderer3d", () => {
       assert.equal(lines.length, 10);
     });
   });
+
+  describe("renderBufferToString with dim", () => {
+    it("dims cells that are not marked as changed", () => {
+      const buf = createFrameBuffer(4, 1);
+      buf.chars[0][0] = { char: "█", color: "#55cc44" };
+      buf.chars[0][1] = { char: "█", color: "#ffaa33" };
+      buf.fileIndices[0][0] = 0;
+      buf.fileIndices[0][1] = 1;
+
+      const changedIndices = new Set([1]);
+      const normal = renderBufferToString(buf);
+      const dimmed = renderBufferToString(buf, "#0a0a1a", changedIndices);
+
+      assert.ok(typeof normal === "string");
+      assert.ok(typeof dimmed === "string");
+      assert.notEqual(normal, dimmed);
+    });
+  });
 });

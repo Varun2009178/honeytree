@@ -95,7 +95,7 @@ export function rasterize(buf, projectedPoints, depthRange = null) {
   }
 }
 
-export function renderBufferToString(buf, bgColor = BG_COLOR) {
+export function renderBufferToString(buf, bgColor = BG_COLOR, changedIndices = null) {
   const lines = [];
 
   for (let y = 0; y < buf.height; y++) {
@@ -105,7 +105,11 @@ export function renderBufferToString(buf, bgColor = BG_COLOR) {
       if (!cell.color) {
         line += chalk.hex(bgColor)(" ");
       } else {
-        line += chalk.hex(cell.color)(cell.char);
+        let color = cell.color;
+        if (changedIndices && buf.fileIndices[y][x] >= 0 && !changedIndices.has(buf.fileIndices[y][x])) {
+          color = lerpColor(color, bgColor, 0.6);
+        }
+        line += chalk.hex(color)(cell.char);
       }
     }
     lines.push(line);
