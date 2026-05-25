@@ -1,4 +1,4 @@
-// src/scanner.js
+// src/scanner.js — walks project directory to collect file metadata
 import fs from "node:fs";
 import path from "node:path";
 import { execSync } from "node:child_process";

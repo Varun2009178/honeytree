@@ -1,6 +1,6 @@
 {
   "name": "honeytree",
-  "version": "1.1.6",
+  "version": "1.2.0",
   "description": "Your codebase is a forest — 3D terminal visualization of any codebase",
   "type": "module",
   "bin": {

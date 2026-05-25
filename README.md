@@ -2,16 +2,14 @@
 
 # Honeytree
 
-**Grow a pixel-art forest in your terminal every time you use Claude Code.**
-
-https://github.com/user-attachments/assets/b0256ab0-fafa-4898-b8c1-1a6336ec4553
-
-
+**Your codebase is a forest — 3D terminal visualization of any project.**
 
 [![npm version](https://img.shields.io/npm/v/honeytree.svg)](https://www.npmjs.com/package/honeytree)
 [![license](https://img.shields.io/npm/l/honeytree.svg)](https://github.com/Varun2009178/honeytree/blob/main/LICENSE)
 
-Each prompt plants a new tree. Each tree grows over time. Your forest evolves from a clearing into an ancient woodland — and it never resets.
+[![honeytree](./honeytree-badge.svg)](https://github.com/Varun2009178/honeytree)
+
+Honeytree scans your project, turns each source file into a 3D tree, and renders the whole thing as a rotatable point-cloud forest in your terminal. Modified files glow amber so you can see what changed at a glance.
 
 </div>
 
@@ -20,126 +18,87 @@ Each prompt plants a new tree. Each tree grows over time. Your forest evolves fr
 ## Quick Start
 
 ```bash
+# 1. Install globally
 npm install -g honeytree
-honeytree init
+
+# 2. Navigate to any project
+cd your-project
+
+# 3. Launch the forest
 honeytree
 ```
 
-**That's it.** Three commands:
+That's it. Honeytree scans the current directory, finds all source files, and renders them as a 3D forest you can rotate and explore.
 
-1. **Install** — installs the CLI globally
-2. **Init** — creates your forest and registers a [Claude Code hook](https://docs.anthropic.com/en/docs/claude-code/hooks) that plants a tree after every response
-3. **View** — opens the live viewer in your terminal (run this in a separate terminal pane)
+### First time? Here's what to expect:
 
-After init, trees are planted automatically. No manual steps needed. Just keep using Claude Code and watch your forest grow.
+1. You'll see "Scanning codebase..." briefly
+2. The forest appears — each tree is one of your source files
+3. Drag your mouse to orbit the camera, scroll or press `+`/`-` to zoom
+4. Hover over a tree to see which file it represents (shown in the top bar)
+5. Press `q` or `Esc` to exit
+
+> **Tip:** Make sure your terminal supports 24-bit color (iTerm2, Kitty, Windows Terminal, most modern terminals). The default macOS Terminal.app works but colors may look off.
+
+---
+
+## Features
+
+### 3D Point-Cloud Forest
+
+Every source file becomes a tree. Trees are positioned spatially by directory structure — files in the same folder cluster together. The forest is rendered as a true 3D point cloud with perspective projection.
+
+### Interactive Camera
+
+| Control | Action |
+|---------|--------|
+| Click + drag | Rotate camera (orbit) |
+| `+` / `-` | Zoom in / out |
+| Arrow keys | Pan camera |
+| `q` / `Esc` | Quit |
+
+### Git Diff Review
+
+Honeytree watches for uncommitted changes and highlights modified files in amber. Press `d` to open the split-screen diff panel:
+
+| Key | Action |
+|-----|--------|
+| `d` | Toggle diff panel |
+| `j` / `k` | Navigate between hunks |
+| `s` | Stage current hunk |
+| `r` | Revert current hunk |
+| `Esc` | Close diff panel |
+
+Modified trees are rendered brighter and with an amber glow so they stand out from unchanged code.
+
+### File Hover
+
+Mouse over any tree to see its file path in the top bar. Modified files show a `[modified]` tag.
 
 ---
 
 ## How It Works
 
-`honeytree init` does two things:
-
-1. Creates `~/.honeydew/forest.json` — your persistent forest state
-2. Adds a `Stop` hook to `~/.claude/settings.json` — runs `honeytree plant` after every Claude Code response
-
-Every response plants a tree at a random position, with a random species and growth stage. Existing trees grow a little each time too.
-
-Open the viewer (`honeytree`) in a second terminal to watch it happen in real time. The viewer auto-updates when new trees appear — no refreshing needed.
-
----
-
-## Panning
-
-Your forest is wider than your terminal. Use **left/right arrow keys** to pan across the full canvas and explore your forest.
-
-When a new tree is planted, the viewer automatically scrolls to show it. A minimap in the stats bar shows your current position.
-
----
-
-## Streaks
-
-Honeytree tracks your coding streak — consecutive days using Claude Code.
-
-- **Active streak** — displayed in the stats bar (e.g. `7-day streak`)
-- **Broken streak** — miss a day and your forest starts **wilting**: trees desaturate toward brown, fog rolls in
-- **Recovery** — your next prompt clears the wilting immediately
-
-| Days idle | Effect |
-|----------:|--------|
-| 1 | Light desaturation, sparse fog |
-| 2 | Noticeable browning, moderate fog |
-| 3 | Heavy browning, dense fog |
-| 4+ | Near-dead forest, thick fog |
-
-Plant a tree to bring it back to life.
-
----
-
-## Biomes
-
-Your forest evolves visually as it grows:
-
-| Trees | Biome | What changes |
-|------:|-------|-------------|
-| 0-9 | Clearing | Sparse stars, light ground |
-| 10-24 | Grove | Stars and ground details appear |
-| 25-49 | Woodland | Dense canopy, mushrooms and bushes on the ground |
-| 50-99 | Old Growth | Deep greens, fallen leaves, full underbrush |
-| 100+ | Ancient Forest | Richest palette, lush ground cover, brightest sky |
-
-Trees are never deleted. The forest only grows.
+1. **Scan** — walks your project tree, skipping `node_modules`, `.git`, `dist`, etc.
+2. **Generate** — assigns each file a 3D position and species based on directory depth, file size, and extension
+3. **Render** — projects the point cloud onto your terminal with a perspective camera
+4. **Watch** — monitors `git diff` for changes and highlights affected trees in real time
 
 ---
 
 ## Tree Species
 
-Five species, randomly assigned at planting:
+Files are assigned species based on their extension:
 
-| Species | Look |
-|---------|------|
-| Oak | Wide, rounded canopy |
-| Pine | Tall, triangular shape |
-| Birch | Light trunk, bright leaves |
-| Willow | Drooping canopy |
-| Cherry | Pink blossoms |
+| Extension | Species | Look |
+|-----------|---------|------|
+| `.js`, `.ts` | Oak | Wide, rounded canopy |
+| `.py`, `.rb` | Pine | Tall, triangular shape |
+| `.html`, `.css` | Birch | Light trunk, bright leaves |
+| `.md`, `.txt` | Willow | Drooping canopy |
+| `.json`, `.yaml` | Cherry | Pink blossoms |
 
-Each species has 4 growth stages: seed, sapling, young, full. Existing trees grow a little with each new prompt.
-
----
-
-## Badge
-
-Add a live badge to any repo's README:
-
-```bash
-honeytree badge
-```
-
-Creates `honeytree-badge.svg` in your current directory. Embed it with:
-
-```markdown
-[![honeytree](./honeytree-badge.svg)](https://github.com/Varun2009178/honeytree)
-```
-
-| State | Badge color | Example |
-|-------|-------------|---------|
-| Active streak | Green | `42 trees · 7d streak` |
-| Wilting | Orange-red | `42 trees · wilting` |
-| No streak data | Grey | `42 trees` |
-
-Re-run `honeytree badge` to update with latest stats.
-
----
-
-## FOREST.md
-
-Generate a shareable markdown snapshot:
-
-```bash
-honeytree md
-```
-
-Creates `FOREST.md` with your badge, stats, a plain-text rendering of your forest, and total prompts. Commit it to your repo so your team can see the forest.
+Larger files produce taller trees. Deeper directories produce trees further from the center.
 
 ---
 
@@ -147,37 +106,39 @@ Creates `FOREST.md` with your badge, stats, a plain-text rendering of your fores
 
 | Command | Description |
 |---------|-------------|
-| `honeytree init` | Create forest and register Claude Code hook |
-| `honeytree` | Launch the live viewer |
-| `honeytree plant` | Plant a tree manually |
+| `honeytree` | Launch the 3D viewer for current directory |
+| `honeytree [dir]` | Launch viewer for a specific directory |
+| `honeytree init` | Register Claude Code hook (plants tree per prompt) |
+| `honeytree plant` | Plant a tree manually (hook mode) |
 | `honeytree badge` | Generate `honeytree-badge.svg` |
 | `honeytree md` | Generate `FOREST.md` |
 
 ---
 
-## Stats Bar
+## Claude Code Integration
 
-The viewer shows a stats bar below your forest:
+Optionally, Honeytree can also grow a persistent forest that tracks your Claude Code usage:
 
+```bash
+honeytree init
 ```
- honeytree · 42 trees · 7-day streak · ████████░░░░ next: oak [woodland] [═══─────────]
-```
 
-| Segment | Meaning |
-|---------|---------|
-| `42 trees` | Total trees planted (one per prompt, never deleted) |
-| `7-day streak` | Consecutive days using Claude Code |
-| `████████░░░░` | Progress toward next milestone (10, 25, 50, 100, 250, 500, 1000) |
-| `next: oak` | Species of the next tree |
-| `[woodland]` | Current biome |
-| `[═══─────────]` | Viewport minimap (position in the full forest) |
+This registers a [Claude Code hook](https://docs.anthropic.com/en/docs/claude-code/hooks) that plants a tree after every response. Run `honeytree` in a second terminal pane to watch your forest grow in real time.
+
+Features in hook mode:
+- **Streaks** — consecutive days of usage tracked in the stats bar
+- **Biomes** — forest evolves visually as tree count grows (clearing → grove → woodland → old growth → ancient)
+- **Wilting** — miss a day and trees desaturate; plant again to recover
 
 ---
 
 ## Requirements
 
 - Node.js 18+
-- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) (for the automatic hook)
+- A terminal with 24-bit color support (most modern terminals)
+- Git (for diff features)
+
+---
 
 ## Links
 
