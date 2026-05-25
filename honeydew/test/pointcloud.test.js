@@ -165,4 +165,30 @@ describe("pointcloud", () => {
       assert.ok(avgPointsPerFile < avgSmall);
     });
   });
+
+  describe("changed tree colors", () => {
+    it("uses amber colors when file.changed is true", () => {
+      const points = generateTreeCloud(
+        { relativePath: "src/app.js", extension: ".js", size: 500, churn: 5, changed: true },
+        { x: 0, z: 0 },
+      );
+      const canopyPoints = points.filter(p => p.color !== "#8B6914");
+      const amberColors = ["#ffaa33", "#ff8822", "#ffcc44", "#ee7711"];
+      for (const p of canopyPoints) {
+        assert.ok(amberColors.includes(p.color), `Expected amber color, got ${p.color}`);
+      }
+    });
+
+    it("uses normal species colors when file.changed is false or absent", () => {
+      const points = generateTreeCloud(
+        { relativePath: "src/app.js", extension: ".js", size: 500, churn: 5 },
+        { x: 0, z: 0 },
+      );
+      const canopyPoints = points.filter(p => p.color !== "#8B6914");
+      const amberColors = ["#ffaa33", "#ff8822", "#ffcc44", "#ee7711"];
+      for (const p of canopyPoints) {
+        assert.ok(!amberColors.includes(p.color), `Did not expect amber color, got ${p.color}`);
+      }
+    });
+  });
 });

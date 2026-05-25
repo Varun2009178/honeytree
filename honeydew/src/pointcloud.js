@@ -8,6 +8,7 @@ const SPECIES = {
 };
 
 const TRUNK_COLOR = "#8B6914";
+const AMBER_COLORS = ["#ffaa33", "#ff8822", "#ffcc44", "#ee7711"];
 
 const EXT_MAP = {
   ".js": "oak", ".jsx": "oak", ".mjs": "oak", ".cjs": "oak",
@@ -43,6 +44,7 @@ function hashString(str) {
 
 export function generateTreeCloud(file, position, fileIndex = 0, lodScale = 1) {
   const species = getSpecies(file.extension);
+  const colors = file.changed ? AMBER_COLORS : species.colors;
   const seed = hashString(file.relativePath);
   const rng = seededRandom(seed);
 
@@ -95,7 +97,7 @@ export function generateTreeCloud(file, position, fileIndex = 0, lodScale = 1) {
       pz = Math.sin(u) * Math.sin(v) * canopyRadiusZ * r;
     }
 
-    const color = species.colors[Math.floor(rng() * species.colors.length)];
+    const color = colors[Math.floor(rng() * colors.length)];
     points.push({
       x: position.x + px,
       y: py,
