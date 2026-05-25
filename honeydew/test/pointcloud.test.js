@@ -173,7 +173,7 @@ describe("pointcloud", () => {
         { x: 0, z: 0 },
       );
       const canopyPoints = points.filter(p => p.color !== "#8B6914");
-      const amberColors = ["#ffaa33", "#ff8822", "#ffcc44", "#ee7711"];
+      const amberColors = ["#ff3333", "#ff5555", "#ff1111", "#ff4444", "#ffffff", "#ffcccc"];
       for (const p of canopyPoints) {
         assert.ok(amberColors.includes(p.color), `Expected amber color, got ${p.color}`);
       }
@@ -185,7 +185,7 @@ describe("pointcloud", () => {
         { x: 0, z: 0 },
       );
       const canopyPoints = points.filter(p => p.color !== "#8B6914");
-      const amberColors = ["#ffaa33", "#ff8822", "#ffcc44", "#ee7711"];
+      const amberColors = ["#ff3333", "#ff5555", "#ff1111", "#ff4444", "#ffffff", "#ffcccc"];
       for (const p of canopyPoints) {
         assert.ok(!amberColors.includes(p.color), `Did not expect amber color, got ${p.color}`);
       }

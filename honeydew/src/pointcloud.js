@@ -8,7 +8,7 @@ const SPECIES = {
 };
 
 const TRUNK_COLOR = "#8B6914";
-const AMBER_COLORS = ["#ffaa33", "#ff8822", "#ffcc44", "#ee7711"];
+const AMBER_COLORS = ["#ff3333", "#ff5555", "#ff1111", "#ff4444", "#ffffff", "#ffcccc"];
 
 const EXT_MAP = {
   ".js": "oak", ".jsx": "oak", ".mjs": "oak", ".cjs": "oak",
@@ -49,13 +49,14 @@ export function generateTreeCloud(file, position, fileIndex = 0, lodScale = 1) {
   const rng = seededRandom(seed);
 
   const sizeLog = Math.log2(Math.max(1, file.size));
-  const basePoints = Math.round(220 + sizeLog * 35);
+  const changedBoost = file.changed ? 1.5 : 1;
+  const basePoints = Math.round((220 + sizeLog * 35) * changedBoost);
   const churnMultiplier = 1 + Math.min(1, (file.churn || 0) / 30);
   const canopyCount = Math.round(basePoints * churnMultiplier * lodScale);
 
   const height = 5 + sizeLog * 1.1;
   const canopyCenterY = height;
-  const canopyRadiusX = (height * 0.45) * species.widthScale;
+  const canopyRadiusX = (height * 0.45) * species.widthScale * changedBoost;
   const canopyRadiusY = (height * 0.5) * species.heightScale;
   const canopyRadiusZ = canopyRadiusX;
 
