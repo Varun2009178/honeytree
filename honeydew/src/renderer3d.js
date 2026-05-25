@@ -118,11 +118,14 @@ export function renderBufferToString(buf, bgColor = BG_COLOR, changedIndices = n
   return lines.join("\n");
 }
 
-export function renderTopBar(hoveredFile, width) {
+export function renderTopBar(hoveredFile, width, modified = false) {
   if (!hoveredFile) return " ".repeat(width);
-  const label = ` ${hoveredFile} `;
-  const pad = Math.max(0, Math.floor((width - label.length) / 2));
-  return " ".repeat(pad) + chalk.hex("#f5a50b")(label) + " ".repeat(Math.max(0, width - pad - label.length));
+  const tag = modified ? " [modified]" : "";
+  const plainLen = hoveredFile.length + tag.length + 2;
+  const pad = Math.max(0, Math.floor((width - plainLen) / 2));
+  const fileText = chalk.hex("#f5a50b")(` ${hoveredFile}`);
+  const tagText = modified ? chalk.hex("#ff8822")(" [modified]") : "";
+  return " ".repeat(pad) + fileText + tagText + " " + " ".repeat(Math.max(0, width - pad - plainLen));
 }
 
 export function renderStatusBar(fileCount, width, prefix = "") {
