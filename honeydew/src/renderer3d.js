@@ -125,8 +125,8 @@ export function renderTopBar(hoveredFile, width) {
   return " ".repeat(pad) + chalk.hex("#f5a50b")(label) + " ".repeat(Math.max(0, width - pad - label.length));
 }
 
-export function renderStatusBar(fileCount, width) {
-  const rightPart = `${fileCount} files  |  drag to rotate  |  +/- zoom  |  q quit  r rescan `;
+export function renderStatusBar(fileCount, width, prefix = "") {
+  const rightPart = `${prefix}${fileCount} files  |  drag to rotate  |  +/- zoom  |  d diff  |  q quit  r rescan `;
   const padding = Math.max(0, width - rightPart.length);
   return " ".repeat(padding) + chalk.hex("#8e8a84")(rightPart);
 }

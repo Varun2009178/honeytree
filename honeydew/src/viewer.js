@@ -1,7 +1,12 @@
+import chalk from "chalk";
 import { scanCodebase } from "./scanner.js";
 import { generateForestCloud, generateGroundPlane } from "./pointcloud.js";
 import { createCamera, rotatePoint, projectPoint, clampElevation, clampAzimuth } from "./camera.js";
 import { createFrameBuffer, rasterize, renderBufferToString, renderTopBar, renderStatusBar } from "./renderer3d.js";
+import { getChangedFiles, getFileDiff } from "./diffwatch.js";
+import { parseDiff } from "./diffparser.js";
+import { createDiffPanel, renderDiffPanel } from "./diffpanel.js";
+import { stageHunk, revertHunk } from "./diffactions.js";
 
 export function createForestWatcher(filePath, onChange) {
   try {
@@ -79,7 +84,13 @@ export async function viewer(targetDir) {
   let lastMouseX = 0;
   let lastMouseY = 0;
   let hoveredFile = "";
+  let hoveredModified = false;
   let needsRedraw = true;
+
+  let changedFiles = new Set();
+  let diffPanel = null;
+  let diffMode = false;
+  let pollTimer = null;
 
   let screenWidth = process.stdout.columns || 80;
   let screenHeight = (process.stdout.rows || 24) - 2;
@@ -88,12 +99,13 @@ export async function viewer(targetDir) {
     screenWidth = process.stdout.columns || 80;
     screenHeight = (process.stdout.rows || 24) - 2;
 
-    const buf = createFrameBuffer(screenWidth, screenHeight);
+    const forestWidth = diffPanel ? Math.floor(screenWidth * 0.4) : screenWidth;
+    const buf = createFrameBuffer(forestWidth, screenHeight);
 
     const projected = [];
     for (const p of allPoints) {
       const [rx, ry, rz] = rotatePoint(p.x, p.y, p.z, camera.azimuth, camera.elevation);
-      const proj = projectPoint(rx, ry, rz, screenWidth, screenHeight, camera.distance);
+      const proj = projectPoint(rx, ry, rz, forestWidth, screenHeight, camera.distance);
       if (proj.visible) {
         projected.push({
           ...proj,
@@ -105,20 +117,92 @@ export async function viewer(targetDir) {
 
     rasterize(buf, projected);
 
+    const changedIndices = diffMode
+      ? new Set(files.map((f, i) => f.changed ? i : -1).filter(i => i >= 0))
+      : null;
+
     moveHome();
-    process.stdout.write(renderTopBar(hoveredFile, screenWidth));
+    process.stdout.write(renderTopBar(hoveredFile, screenWidth, hoveredModified));
     process.stdout.write("\n");
-    process.stdout.write(renderBufferToString(buf));
+
+    const forestLines = renderBufferToString(buf, undefined, changedIndices).split("\n");
+
+    if (diffPanel) {
+      const panelWidth = screenWidth - forestWidth - 1;
+      const panelLines = renderDiffPanel(diffPanel, panelWidth, screenHeight);
+      const border = chalk.hex("#555555")("│");
+
+      for (let y = 0; y < screenHeight; y++) {
+        const fLine = forestLines[y] || "";
+        const pLine = panelLines[y] || "";
+        process.stdout.write(fLine + border + pLine);
+        if (y < screenHeight - 1) process.stdout.write("\n");
+      }
+    } else {
+      process.stdout.write(forestLines.join("\n"));
+    }
+
     process.stdout.write("\n");
-    process.stdout.write(renderStatusBar(files.length, screenWidth));
+
+    const changedCount = changedFiles.size;
+    const changeText = changedCount > 0 ? `${changedCount} files changed  |  ` : "";
+    process.stdout.write(renderStatusBar(files.length, screenWidth, changeText));
 
     return buf;
+  }
+
+  function regeneratePoints() {
+    const { points: newTreePoints, filePaths: newPaths } = generateForestCloud(files);
+    const newGround = generateGroundPlane(groundRadius);
+    allPoints.length = 0;
+    allPoints.push(...newTreePoints, ...newGround);
+    filePaths.length = 0;
+    filePaths.push(...newPaths);
+  }
+
+  function pollChanges() {
+    const newChanged = getChangedFiles(dir);
+    const changed = newChanged.size !== changedFiles.size ||
+      [...newChanged].some(f => !changedFiles.has(f));
+    changedFiles = newChanged;
+
+    for (const file of files) {
+      file.changed = changedFiles.has(file.relativePath);
+    }
+
+    if (changed) {
+      regeneratePoints();
+      needsRedraw = true;
+      redraw();
+    }
+  }
+
+  function checkAllResolved() {
+    if (!diffPanel) return;
+    const allDone = diffPanel.hunkStatus.every(s => s !== "pending");
+    if (!allDone) return;
+
+    for (let i = 0; i < diffPanel.hunks.length; i++) {
+      if (diffPanel.hunkStatus[i] === "accepted") {
+        stageHunk(dir, diffPanel.filePath, diffPanel.hunks[i]);
+      } else if (diffPanel.hunkStatus[i] === "rejected") {
+        revertHunk(dir, diffPanel.filePath, diffPanel.hunks[i]);
+      }
+    }
+
+    diffPanel = null;
+    clearScreen();
+    pollChanges();
   }
 
   hideCursor();
   clearScreen();
   enableMouse();
   enableMouseMotion();
+
+  pollTimer = setInterval(pollChanges, 2000);
+  pollChanges();
+
   let currentBuf = renderFrame();
   needsRedraw = false;
 
@@ -142,6 +226,7 @@ export async function viewer(targetDir) {
   }
 
   const cleanup = () => {
+    if (pollTimer) clearInterval(pollTimer);
     disableMouseMotion();
     disableMouse();
     showCursor();
@@ -169,18 +254,80 @@ export async function viewer(targetDir) {
         return;
       }
 
+      // Panel keybindings (when panel is open)
+      if (diffPanel) {
+        if (key === "\x1b" || key === "\x1b\x1b") {
+          diffPanel = null;
+          needsRedraw = true;
+          clearScreen();
+          redraw();
+          return;
+        }
+        if (key === "j" || key === "\x1b[B") {
+          diffPanel.currentHunk = Math.min(diffPanel.currentHunk + 1, diffPanel.hunks.length - 1);
+          needsRedraw = true;
+          redraw();
+          return;
+        }
+        if (key === "k" || key === "\x1b[A") {
+          diffPanel.currentHunk = Math.max(diffPanel.currentHunk - 1, 0);
+          needsRedraw = true;
+          redraw();
+          return;
+        }
+        if (key === "a") {
+          diffPanel.hunkStatus[diffPanel.currentHunk] = "accepted";
+          const next = diffPanel.hunkStatus.findIndex((s, i) => i > diffPanel.currentHunk && s === "pending");
+          if (next >= 0) diffPanel.currentHunk = next;
+          checkAllResolved();
+          needsRedraw = true;
+          redraw();
+          return;
+        }
+        if (key === "r") {
+          diffPanel.hunkStatus[diffPanel.currentHunk] = "rejected";
+          const next = diffPanel.hunkStatus.findIndex((s, i) => i > diffPanel.currentHunk && s === "pending");
+          if (next >= 0) diffPanel.currentHunk = next;
+          checkAllResolved();
+          needsRedraw = true;
+          redraw();
+          return;
+        }
+        if (key === "A") {
+          for (let i = 0; i < diffPanel.hunkStatus.length; i++) {
+            if (diffPanel.hunkStatus[i] === "pending") diffPanel.hunkStatus[i] = "accepted";
+          }
+          checkAllResolved();
+          needsRedraw = true;
+          redraw();
+          return;
+        }
+        if (key === "R") {
+          for (let i = 0; i < diffPanel.hunkStatus.length; i++) {
+            if (diffPanel.hunkStatus[i] === "pending") diffPanel.hunkStatus[i] = "rejected";
+          }
+          checkAllResolved();
+          needsRedraw = true;
+          redraw();
+          return;
+        }
+        return;
+      }
+
+      if (key === "d") {
+        diffMode = !diffMode;
+        needsRedraw = true;
+        redraw();
+        return;
+      }
+
       if (key === "r") {
         process.stdout.write("\x1b[H");
         process.stdout.write("Rescanning...");
         const newFiles = scanCodebase(dir);
         files.length = 0;
         files.push(...newFiles);
-        const { points: newTreePoints, filePaths: newPaths } = generateForestCloud(files);
-        const newGround = generateGroundPlane(Math.max(25, Math.sqrt(files.length) * 7));
-        allPoints.length = 0;
-        allPoints.push(...newTreePoints, ...newGround);
-        filePaths.length = 0;
-        filePaths.push(...newPaths);
+        regeneratePoints();
         needsRedraw = true;
         clearScreen();
         redraw();
@@ -212,7 +359,6 @@ export async function viewer(targetDir) {
         return;
       }
 
-      // Zoom: +/= to zoom in, - to zoom out
       if (key === "+" || key === "=") {
         camera.distance = Math.max(10, camera.distance - 5);
         needsRedraw = true;
@@ -237,6 +383,26 @@ export async function viewer(targetDir) {
       }
 
       if (mouse.released && mouse.button === 0) {
+        const sy = mouse.y - 1;
+        const sx = mouse.x;
+        if (!diffPanel && currentBuf && sy >= 0 && sy < currentBuf.height && sx >= 0 && sx < currentBuf.width) {
+          const fi = currentBuf.fileIndices[sy][sx];
+          if (fi >= 0 && files[fi] && files[fi].changed) {
+            const filePath = filePaths[fi];
+            const diff = getFileDiff(dir, filePath);
+            if (diff) {
+              const hunks = parseDiff(diff);
+              if (hunks.length > 0) {
+                diffPanel = createDiffPanel(filePath, hunks);
+                needsRedraw = true;
+                clearScreen();
+                redraw();
+                mouseDown = false;
+                return;
+              }
+            }
+          }
+        }
         mouseDown = false;
         return;
       }
@@ -260,10 +426,12 @@ export async function viewer(targetDir) {
         if (currentBuf && sy >= 0 && sy < currentBuf.height && sx >= 0 && sx < currentBuf.width) {
           const fi = currentBuf.fileIndices[sy][sx];
           const newHover = fi >= 0 ? filePaths[fi] : "";
+          const isModified = fi >= 0 && files[fi] && files[fi].changed;
           if (newHover !== hoveredFile) {
             hoveredFile = newHover;
+            hoveredModified = isModified;
             writeAnsi(`\x1b[1;1H`);
-            process.stdout.write(renderTopBar(hoveredFile, screenWidth));
+            process.stdout.write(renderTopBar(hoveredFile, screenWidth, hoveredModified));
           }
         }
       }
