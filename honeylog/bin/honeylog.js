@@ -2,4 +2,5 @@
 
 import { main } from '../src/main.js';
 
-main();
+const ascii = process.argv.includes('--ascii');
+main(ascii);
