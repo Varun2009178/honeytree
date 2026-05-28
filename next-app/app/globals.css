@@ -801,6 +801,27 @@ pre{font-family:var(--mono)}
 }
 .dash-plant-btn:hover{background:#3d6b4c;transform:translateY(-2px);box-shadow:0 6px 24px rgba(74,124,89,.3)}
 .dash-plant-btn:disabled{opacity:.5;cursor:wait;transform:none;box-shadow:none}
+.dash-qty-row{
+  display:inline-flex;align-items:center;gap:10px;
+  margin-bottom:16px;
+}
+.dash-qty-label{
+  font-size:.92rem;font-weight:500;color:var(--ink-soft,#5b6b5e);
+  font-family:var(--font);
+}
+.dash-qty-select{
+  appearance:none;-webkit-appearance:none;
+  padding:8px 32px 8px 14px;
+  border-radius:10px;
+  border:1px solid rgba(74,124,89,.35);
+  background:#fff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path fill='%234a7c59' d='M1 1l5 5 5-5'/></svg>") no-repeat right 12px center;
+  color:var(--ink,#2c3a30);
+  font-size:1rem;font-weight:600;font-family:var(--font);
+  cursor:pointer;
+  transition:border-color 160ms,box-shadow 160ms;
+}
+.dash-qty-select:hover{border-color:var(--green)}
+.dash-qty-select:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(74,124,89,.15)}
 .dash-action-note{
   margin-top:12px;
   font-size:.78rem;color:var(--tx3);
