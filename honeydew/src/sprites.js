@@ -1,4 +1,5 @@
 export const TREE_TYPES = ["oak", "pine", "birch", "willow", "cherry"];
+export const TREE_TYPES_WITH_BLOSSOM = ["oak", "pine", "birch", "willow", "cherry", "cherry_blossom"];
 
 const COLORS = {
   canopyDark: "#3f7132",
@@ -12,6 +13,30 @@ const COLORS = {
   birchTrunk: "#d9d6d2",
   cherryPink: "#de93b8",
   cherryBloom: "#f0b7cf",
+};
+
+const BLOSSOM_COLORS = {
+  petalSoft: "#f7d1e0",
+  petalBright: "#ffa6c9",
+  petalDeep: "#e87aab",
+  branch: "#a67c5b",
+};
+
+// Teal palette for "Grove" status unlock
+export const TEAL_COLORS = {
+  canopyDark: "#1a7a6a",
+  canopyMid: "#2eb8a0",
+  canopyLight: "#5de0c8",
+  trunkDark: "#4a6b5f",
+  trunkMid: "#6a8b7f",
+};
+
+// Gold palette for "Ancient Forest" tall trees
+export const GOLD_COLORS = {
+  canopyTop: "#FFD700",
+  canopyMid: "#DAA520",
+  canopyDark: "#B8860B",
+  trunk: "#8B7355",
 };
 
 const DETAIL_COLORS = {
@@ -240,7 +265,25 @@ pPPpPPPp
       { p: COLORS.cherryBloom, P: COLORS.cherryPink, t: COLORS.trunkLight },
     ),
   },
+  cherry_blossom: {
+    seed: parse(` p\n b`, { p: BLOSSOM_COLORS.petalSoft, b: BLOSSOM_COLORS.branch }),
+    sapling: parse(` pP\npBp\n b`, { p: BLOSSOM_COLORS.petalSoft, P: BLOSSOM_COLORS.petalBright, B: BLOSSOM_COLORS.petalDeep, b: BLOSSOM_COLORS.branch }),
+    young: parse(`  PB\n PpBp\npBPpBP\n  bb\n  bb`, { p: BLOSSOM_COLORS.petalSoft, P: BLOSSOM_COLORS.petalBright, B: BLOSSOM_COLORS.petalDeep, b: BLOSSOM_COLORS.branch }),
+    full: parse(`   PBp\n pBPPBp\nPBpPBPBP\n pBPPBp\n   bb\n   bb`, { p: BLOSSOM_COLORS.petalSoft, P: BLOSSOM_COLORS.petalBright, B: BLOSSOM_COLORS.petalDeep, b: BLOSSOM_COLORS.branch }),
+  },
 };
+
+// Tall golden tree for "Ancient Forest" reward (1 in 8 trees)
+const ANCIENT_TREE = {
+  seed: parse(` g\n t`, { g: GOLD_COLORS.canopyTop, t: GOLD_COLORS.trunk }),
+  sapling: parse(` gg\ngGg\n t`, { g: GOLD_COLORS.canopyTop, G: GOLD_COLORS.canopyMid, t: GOLD_COLORS.trunk }),
+  young: parse(`  Tg\n TGGg\nTgGGgT\n  tt\n  tt\n  tt`, { g: GOLD_COLORS.canopyMid, G: GOLD_COLORS.canopyDark, T: GOLD_COLORS.canopyTop, t: GOLD_COLORS.trunk }),
+  full: parse(`   TT\n  TGGT\n TgGGGgT\nTgGGGGgT\n TgGGGg\n   tt\n   tt\n   tt`, { g: GOLD_COLORS.canopyMid, G: GOLD_COLORS.canopyDark, T: GOLD_COLORS.canopyTop, t: GOLD_COLORS.trunk }),
+};
+
+export function getAncientSprite(growth) {
+  return ANCIENT_TREE[getGrowthStage(growth)];
+}
 
 const GROUND_DETAILS = {
   mushroom: parse(

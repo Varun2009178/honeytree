@@ -4,12 +4,14 @@ import { useState, useEffect, useRef } from "react"
 import { ForestDisplay, MiniTree } from "@/components/forest-display"
 
 // ─── Data ────────────────────────────────────────────────
-const CMDS = ["npm install -g honeytree", "honeytree init", "honeytree"]
+const CMDS = ["npm install -g honeytree", "honeytree init", "honeytree login", "honeytree"]
 
 const STEPS = [
   { n: "01", title: "Install & init", body: "One global install. honeytree init registers a Stop hook inside Claude Code — no manual steps needed." },
-  { n: "02", title: "Build with Claude", body: "Every time Claude Code completes a response, a new tree is planted automatically in your forest." },
-  { n: "03", title: "Watch it grow", body: "Run the viewer in a separate terminal. Your forest grows in real time, biome by biome, as you ship." },
+  { n: "02", title: "Login & link", body: "Run honeytree login in your terminal. Sign in with GitHub on the dashboard and enter the code to link your account." },
+  { n: "03", title: "Build with Claude", body: "Every time Claude Code completes a response, a new tree is planted automatically in your forest and synced to the cloud." },
+  { n: "04", title: "Watch it grow", body: "Run honeytree in a separate terminal. Your forest grows in real time, biome by biome, as you ship." },
+  { n: "05", title: "Plant real trees", body: "Every 50 virtual trees unlocks a real tree planting for $1 via Good API. Check your rewards with honeytree rewards." },
 ]
 
 const BIOME_DATA = [
@@ -43,7 +45,8 @@ function Nav() {
     <header className="topbar">
       <a href="#" className="brand">Honeytree</a>
       <nav className="nav-links">
-        <a href="https://www.npmjs.com/package/honeytree" target="_blank" rel="noopener noreferrer" className="nav-npm">npm</a>
+        <a href="/dashboard" className="nav-npm">Dashboard</a>
+        <a href="https://www.npmjs.com/package/honeytree" target="_blank" rel="noopener noreferrer" className="nav-link">npm</a>
         <a href="mailto:varun@teyra.app" className="nav-link">Contact</a>
         <a href="https://github.com/Varun2009178/honeytree" target="_blank" rel="noopener noreferrer" className="nav-link nav-icon" aria-label="GitHub">
           <GitHubIcon />
@@ -203,6 +206,27 @@ function Species() {
   )
 }
 
+// ─── Plant Real Trees ────────────────────────────────────
+function RealTrees() {
+  return (
+    <section className="real-trees">
+      <div className="real-trees-inner">
+        <p className="kicker centered">From pixels to soil</p>
+        <h2>Plant a <span style={{ color: "var(--green)" }}>real</span> tree</h2>
+        <p className="real-trees-body">
+          Every 50 virtual trees unlocks a real tree planting for $1 through Good API. Sign in with GitHub, sync your forest, and turn code into canopy.
+        </p>
+        <a href="/dashboard" className="real-trees-cta">
+          Open Dashboard
+        </a>
+        <p className="real-trees-note">
+          Free &amp; open source. Auth and payments are entirely opt-in.
+        </p>
+      </div>
+    </section>
+  )
+}
+
 // ─── Footer ──────────────────────────────────────────────
 function Footer() {
   return (
@@ -231,7 +255,11 @@ export default function Home() {
 
         <section className="hero">
           <h1>Grow a <span className="hero-forest">forest</span><br />with Claude Code.</h1>
-          <p className="hero-sub">Honeytree plants a pixel-art tree in your terminal after every Claude Code prompt. Watch a forest emerge as you build.</p>
+          <p className="hero-sub">Honeytree plants a pixel-art tree in your terminal after every Claude Code prompt. Watch a forest emerge as you build &mdash; then plant real ones.</p>
+          <div className="hero-actions">
+            <a href="/dashboard" className="hero-btn-primary">Open Dashboard</a>
+            <a href="https://github.com/Varun2009178/honeytree" target="_blank" rel="noopener noreferrer" className="hero-btn-secondary">View on GitHub</a>
+          </div>
         </section>
 
         <div className="mid-grid">
@@ -241,6 +269,7 @@ export default function Home() {
 
         <Biomes />
         <Species />
+        <RealTrees />
         <Footer />
       </div>
     </div>

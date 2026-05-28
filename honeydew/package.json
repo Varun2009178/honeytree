@@ -34,7 +34,10 @@
   "author": "Varun Nukala",
   "license": "MIT",
   "dependencies": {
-    "chalk": "^5.4.1"
+    "chalk": "^5.4.1",
+    "honeytree": "^1.2.0",
+    "ink": "^7.0.4",
+    "react": "^19.2.6"
   },
   "engines": {
     "node": ">=18"

@@ -1,151 +1,125 @@
 <div align="center">
 
-# Honeytree
+# Every Claude Code prompt plants a tree.
 
-**Your codebase is a forest — 3D terminal visualization of any project.**
+https://github.com/Varun2009178/honeytree/raw/main/honeytree_correct_video.mp4
+
+**Honeytree grows a pixel-art forest in your terminal as you code with Claude Code.**
+**Then it lets you plant real ones.**
 
 [![npm version](https://img.shields.io/npm/v/honeytree.svg)](https://www.npmjs.com/package/honeytree)
 [![license](https://img.shields.io/npm/l/honeytree.svg)](https://github.com/Varun2009178/honeytree/blob/main/LICENSE)
 
 [![honeytree](./honeytree-badge.svg)](https://github.com/Varun2009178/honeytree)
 
-Honeytree scans your project, turns each source file into a 3D tree, and renders the whole thing as a rotatable point-cloud forest in your terminal. Modified files glow amber so you can see what changed at a glance.
-
 </div>
 
----
-
-## Quick Start
+## 3 commands. That's it.
 
 ```bash
-# 1. Install globally
 npm install -g honeytree
-
-# 2. Navigate to any project
-cd your-project
-
-# 3. Launch the forest
+honeytree init
 honeytree
 ```
 
-That's it. Honeytree scans the current directory, finds all source files, and renders them as a 3D forest you can rotate and explore.
-
-### First time? Here's what to expect:
-
-1. You'll see "Scanning codebase..." briefly
-2. The forest appears — each tree is one of your source files
-3. Drag your mouse to orbit the camera, scroll or press `+`/`-` to zoom
-4. Hover over a tree to see which file it represents (shown in the top bar)
-5. Press `q` or `Esc` to exit
-
-> **Tip:** Make sure your terminal supports 24-bit color (iTerm2, Kitty, Windows Terminal, most modern terminals). The default macOS Terminal.app works but colors may look off.
+`honeytree init` registers a [Claude Code hook](https://docs.anthropic.com/en/docs/claude-code/hooks) that plants a tree after every prompt. Open a second terminal pane, run `honeytree`, and watch your forest grow in real time.
 
 ---
 
-## Features
+## What happens
 
-### 3D Point-Cloud Forest
+Every time Claude Code finishes a response, a new pixel-art tree appears in your terminal. Five species (oak, pine, birch, willow, cherry), four growth stages (seed → sapling → young → full), and five biomes that evolve as your forest grows:
 
-Every source file becomes a tree. Trees are positioned spatially by directory structure — files in the same folder cluster together. The forest is rendered as a true 3D point cloud with perspective projection.
+| Trees | Biome | What changes |
+|-------|-------|-------------|
+| 0–9 | Clearing | Sparse, quiet sky |
+| 10–24 | Grove | Stars brighten, ground details appear |
+| 25–49 | Woodland | Dense canopy, mushrooms and bushes |
+| 50–99 | Old Growth | Rich palette, warm atmosphere |
+| 100+ | Ancient Forest | Deepest colors, full detail |
 
-### Interactive Camera
+Trees sway in the wind. Skip a day and they wilt. Come back and they recover.
+
+---
+
+## Plant real trees
+
+Every **50 virtual trees** unlocks a real tree planting for **$1** through [Good API](https://thegoodapi.com). Sign in with GitHub, sync your forest to the cloud, and turn code into canopy.
+
+```bash
+honeytree login     # link your terminal to your account
+honeytree sync      # push your forest to the cloud
+honeytree rewards   # check your reward tier
+```
+
+Visit [tryhoney.xyz/dashboard](https://tryhoney.xyz/dashboard) to see your stats, track milestones, and plant.
+
+---
+
+## Rewards
+
+Rewards unlock based on real trees planted. They stack — a Legend sees all five effects at once.
+
+| Tier | Real trees | Unlock |
+|------|-----------|--------|
+| Planter | 1 | Badge on your status bar |
+| Bloomer | 5 | Cherry blossom petals across your canopy |
+| Grove | 10 | Teal ground and trunk palette |
+| Ancient Forest | 25 | Rare tall golden trees appear |
+| Legend | 50 | Your username floats above your forest |
+
+---
+
+## 3D codebase viewer
+
+Honeytree also ships a 3D mode that turns any project into a rotatable point-cloud forest:
+
+```bash
+honeytree view .          # current directory
+honeytree view ~/my-app   # any directory
+```
+
+Each source file becomes a tree. Files in the same folder cluster together. Modified files glow amber. Mouse over a tree to see its path. Press `d` to open the inline diff panel.
 
 | Control | Action |
 |---------|--------|
-| Click + drag | Rotate camera (orbit) |
-| `+` / `-` | Zoom in / out |
-| Arrow keys | Pan camera |
-| `q` / `Esc` | Quit |
-
-### Git Diff Review
-
-Honeytree watches for uncommitted changes and highlights modified files in amber. Press `d` to open the split-screen diff panel:
-
-| Key | Action |
-|-----|--------|
+| Click + drag | Orbit camera |
+| `+` / `-` | Zoom |
+| Arrow keys | Pan |
 | `d` | Toggle diff panel |
-| `j` / `k` | Navigate between hunks |
-| `s` | Stage current hunk |
-| `r` | Revert current hunk |
-| `Esc` | Close diff panel |
-
-Modified trees are rendered brighter and with an amber glow so they stand out from unchanged code.
-
-### File Hover
-
-Mouse over any tree to see its file path in the top bar. Modified files show a `[modified]` tag.
+| `q` | Quit |
 
 ---
 
-## How It Works
+## CLI reference
 
-1. **Scan** — walks your project tree, skipping `node_modules`, `.git`, `dist`, etc.
-2. **Generate** — assigns each file a 3D position and species based on directory depth, file size, and extension
-3. **Render** — projects the point cloud onto your terminal with a perspective camera
-4. **Watch** — monitors `git diff` for changes and highlights affected trees in real time
-
----
-
-## Tree Species
-
-Files are assigned species based on their extension:
-
-| Extension | Species | Look |
-|-----------|---------|------|
-| `.js`, `.ts` | Oak | Wide, rounded canopy |
-| `.py`, `.rb` | Pine | Tall, triangular shape |
-| `.html`, `.css` | Birch | Light trunk, bright leaves |
-| `.md`, `.txt` | Willow | Drooping canopy |
-| `.json`, `.yaml` | Cherry | Pink blossoms |
-
-Larger files produce taller trees. Deeper directories produce trees further from the center.
-
----
-
-## CLI Reference
-
-| Command | Description |
+| Command | What it does |
 |---------|-------------|
-| `honeytree` | Launch the 3D viewer for current directory |
-| `honeytree [dir]` | Launch viewer for a specific directory |
-| `honeytree init` | Register Claude Code hook (plants tree per prompt) |
-| `honeytree plant` | Plant a tree manually (hook mode) |
+| `honeytree` | Open the 2D forest viewer |
+| `honeytree init` | Register Claude Code hook |
+| `honeytree plant` | Plant a tree manually |
+| `honeytree view [dir]` | 3D codebase viewer |
+| `honeytree login` | Link terminal to your account |
+| `honeytree logout` | Remove stored credentials |
+| `honeytree sync` | Push forest to cloud |
+| `honeytree rewards` | Show reward tiers and progress |
+| `honeytree status` | Check login status |
 | `honeytree badge` | Generate `honeytree-badge.svg` |
 | `honeytree md` | Generate `FOREST.md` |
-
----
-
-## Claude Code Integration
-
-Optionally, Honeytree can also grow a persistent forest that tracks your Claude Code usage:
-
-```bash
-honeytree init
-```
-
-This registers a [Claude Code hook](https://docs.anthropic.com/en/docs/claude-code/hooks) that plants a tree after every response. Run `honeytree` in a second terminal pane to watch your forest grow in real time.
-
-Features in hook mode:
-- **Streaks** — consecutive days of usage tracked in the stats bar
-- **Biomes** — forest evolves visually as tree count grows (clearing → grove → woodland → old growth → ancient)
-- **Wilting** — miss a day and trees desaturate; plant again to recover
 
 ---
 
 ## Requirements
 
 - Node.js 18+
-- A terminal with 24-bit color support (most modern terminals)
-- Git (for diff features)
+- A terminal with 24-bit color (iTerm2, Kitty, Windows Terminal, Ghostty — most modern terminals work)
 
 ---
 
-## Links
+<div align="center">
 
-- **npm**: [npmjs.com/package/honeytree](https://www.npmjs.com/package/honeytree)
-- **GitHub**: [github.com/Varun2009178/honeytree](https://github.com/Varun2009178/honeytree)
-- **Issues**: [github.com/Varun2009178/honeytree/issues](https://github.com/Varun2009178/honeytree/issues)
+**Free and open source. Auth and payments are entirely opt-in. Your forest works offline forever.**
 
-## License
+[npm](https://www.npmjs.com/package/honeytree) · [GitHub](https://github.com/Varun2009178/honeytree) · [Dashboard](https://tryhoney.xyz/dashboard) · MIT License
 
-MIT
+</div>

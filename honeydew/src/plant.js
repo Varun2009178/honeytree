@@ -1,7 +1,13 @@
-import { getSprite, TREE_TYPES } from "./sprites.js";
+import { getSprite, TREE_TYPES, TREE_TYPES_WITH_BLOSSOM } from "./sprites.js";
+import { hasCherryBlossom } from "./rewards.js";
 import { createEmptyForest, readForest, writeForest } from "./state.js";
 import { findBadgeFile, writeBadgeSVG } from "./badge.js";
 import { migrateLayout } from "./migrate.js";
+import { isLoggedIn } from "./auth.js";
+import { syncToCloud } from "./sync.js";
+import fs from "node:fs";
+import path from "node:path";
+import os from "node:os";
 
 const MIN_GAP = 6;
 const DEFAULT_WIDTH = 80;
@@ -101,7 +107,8 @@ export async function plant() {
     tree.growth = nudgeGrowth(tree.growth);
   }
 
-  const type = randomItem(TREE_TYPES);
+  const availableTypes = hasCherryBlossom() ? TREE_TYPES_WITH_BLOSSOM : TREE_TYPES;
+  const type = randomItem(availableTypes);
   const growth = randomGrowth();
   const nextId = forest.trees.reduce((max, tree) => Math.max(max, tree.id), 0) + 1;
 
@@ -121,4 +128,19 @@ export async function plant() {
     const badgePath = findBadgeFile();
     if (badgePath) writeBadgeSVG(forest, badgePath);
   } catch {}
+
+  // Cloud sync every 10 prompts (fire-and-forget)
+  if (isLoggedIn() && forest.totalPrompts % 10 === 0) {
+    syncToCloud(forest).catch(() => {});
+  }
+
+  // Milestone check at every 50 prompts — unlocks 1 real tree planting
+  if (isLoggedIn() && forest.totalPrompts > 0 && forest.totalPrompts % 50 === 0) {
+    const milestoneFile = path.join(os.homedir(), ".honeydew", "milestone.json");
+    fs.mkdirSync(path.dirname(milestoneFile), { recursive: true });
+    fs.writeFileSync(
+      milestoneFile,
+      JSON.stringify({ totalPrompts: forest.totalPrompts, timestamp: Date.now() })
+    );
+  }
 }

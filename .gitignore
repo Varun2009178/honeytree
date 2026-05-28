@@ -1,10 +1,28 @@
 .DS_Store
 *.pem
 node_modules/
-.env
 .superpowers/
 .npmrc
 .honeytree/
 *.vsix
 **/docs/superpowers/
 .claude/
+
+# Environment / secrets (anywhere in the repo)
+.env
+.env.*
+**/.env
+**/.env.*
+
+# --- Private backend: Supabase + Stripe (accounts & payments) — NOT open source ---
+# The CLI (honeydew/honeylog) and honeytree visualization are open source; the
+# hosted backend that handles accounts and payments stays private.
+next-app/app/api/
+next-app/app/auth/
+next-app/app/dashboard/
+next-app/lib/supabase.ts
+next-app/lib/supabase-browser.ts
+next-app/lib/device-codes.ts
+next-app/lib/rewards.ts
+next-app/components/user-forest-display.tsx
+next-app/supabase/

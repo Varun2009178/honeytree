@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description:
     "Honeytree is a CLI that plants pixel-art trees in your terminal every time you use Claude Code.",
   icons: {
-    icon: "/icon.svg",
+    icon: "/icon.png",
   },
   openGraph: {
     title: "Honeytree | Grow a Forest with Claude Code",

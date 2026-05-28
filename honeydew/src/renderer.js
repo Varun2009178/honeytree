@@ -1,6 +1,6 @@
 import chalk from "chalk";
 
-import { getSprite, getGroundDetail, TREE_TYPES, GROUND_DETAIL_TYPES } from "./sprites.js";
+import { getSprite, getAncientSprite, getGroundDetail, TREE_TYPES, GROUND_DETAIL_TYPES, TEAL_COLORS } from "./sprites.js";
 import { getVirtualWidth } from "./plant.js";
 
 const SKY_ROWS = 4;
@@ -302,6 +302,34 @@ function buildStatsLine(forest, biome, viewportX = 0, virtualWidth = 0, termWidt
   );
 }
 
+export function getStatsData(forest, viewportX = 0, virtualWidth = 0, termWidth = 80) {
+  const treeCount = forest.trees.length;
+  const biome = getBiome(treeCount);
+  const milestone = getNextMilestone(treeCount);
+  const progress = milestone === 0 ? 0 : treeCount / milestone;
+  const streak = forest.streak || 0;
+  const wilt = getWiltFactor(forest.lastActiveDate);
+  let idleDays = 0;
+  if (wilt > 0 && forest.lastActiveDate) {
+    const a = new Date(forest.lastActiveDate + "T00:00:00");
+    const b = new Date(new Date().toISOString().slice(0, 10) + "T00:00:00");
+    idleDays = Math.round((b - a) / (24 * 60 * 60 * 1000));
+  }
+  return {
+    treeCount,
+    streak,
+    wilt,
+    idleDays,
+    milestone,
+    progress,
+    biomeName: biome.label,
+    nextTreeType: getNextTreeType(treeCount),
+    viewportX,
+    virtualWidth,
+    termWidth,
+  };
+}
+
 export function renderFrame(forest, termWidth = 80, options = {}) {
   const width = Math.max(40, termWidth);
   const treeCount = forest.trees.length;
@@ -333,11 +361,21 @@ export function renderFrame(forest, termWidth = 80, options = {}) {
   const windTick = options.windTick ?? null;
   const treeBaseY = groundStart - 1;
   const spriteOverride = options.spriteOverride ?? null;
+  const rewards = options.rewards ?? null;
+  const hasAncient = rewards && rewards.ancient;
+  const hasBloomer = rewards && rewards.bloomer;
+
   for (const tree of forest.trees) {
     const yOffset = getTreeYOffset(tree.id);
-    const sprite = (spriteOverride && spriteOverride.treeId === tree.id)
-      ? spriteOverride.sprite
-      : getSprite(tree.type, tree.growth);
+    let sprite;
+    if (spriteOverride && spriteOverride.treeId === tree.id) {
+      sprite = spriteOverride.sprite;
+    } else if (hasAncient && hash(tree.id * 37) % 8 === 0) {
+      // Ancient: 1 in 8 trees become tall golden trees
+      sprite = getAncientSprite(tree.growth);
+    } else {
+      sprite = getSprite(tree.type, tree.growth);
+    }
     const canopyShiftX = getWindOffset(tree.id, windTick);
     compositeSprite(buffer, sprite, tree.x, treeBaseY - yOffset, canopyShiftX);
   }
@@ -374,10 +412,60 @@ export function renderFrame(forest, termWidth = 80, options = {}) {
 
   renderGroundDetails(buffer, biome, virtualWidth, groundStart);
 
+  // Reward: Bloomer — 30% of canopy █ chars become ✿ in pink
+  if (hasBloomer) {
+    for (let y = 0; y < groundStart; y++) {
+      for (let x = 0; x < virtualWidth; x++) {
+        const cell = buffer[y][x];
+        if (cell.char === "█" && cell.color && y < groundStart) {
+          if (hash(x * 71 + y * 113) % 10 < 3) {
+            cell.char = "✿";
+            cell.color = "#FFB7C5";
+          }
+        }
+      }
+    }
+  }
+
+  // Reward: Grove — teal ground and trunks
+  if (rewards && rewards.grove) {
+    // Teal ground
+    for (let rowIndex = 0; rowIndex < GROUND_ROWS; rowIndex++) {
+      for (let x = 0; x < virtualWidth; x++) {
+        buffer[groundStart + rowIndex][x].color = "#4ECDC4";
+        buffer[groundStart + rowIndex][x].char = "═";
+      }
+    }
+    // Teal trunks (bottom 2 rows of tree area)
+    for (let y = groundStart - 2; y < groundStart; y++) {
+      for (let x = 0; x < virtualWidth; x++) {
+        const cell = buffer[y][x];
+        if (cell.char === "█" && cell.color) {
+          const c = parseHex(cell.color);
+          // Detect trunk colors (brownish hues)
+          if (c.r > c.g && c.r > c.b) {
+            cell.color = TEAL_COLORS.trunkMid;
+          }
+        }
+      }
+    }
+  }
+
   applyFog(buffer, wilt, virtualWidth);
+
+  // Reward: Legend — username floats above forest
+  const legendLine = (rewards && rewards.legend && rewards.username)
+    ? rewards.username
+    : null;
 
   // Slice the viewport from the virtual buffer
   const lines = [];
+
+  if (legendLine) {
+    const pad = Math.max(0, Math.floor((width - legendLine.length) / 2));
+    lines.push(" ".repeat(pad) + chalk.hex("#FFD700")(legendLine));
+  }
+
   for (let y = 0; y < SCENE_HEIGHT - SPACER_ROWS - STATS_ROWS - CTA_ROWS; y += 1) {
     let line = "";
     for (let x = viewportX; x < viewportX + width; x += 1) {
@@ -392,12 +480,15 @@ export function renderFrame(forest, termWidth = 80, options = {}) {
     lines.push(line);
   }
 
-  lines.push("");
-  lines.push(buildStatsLine(forest, biome, viewportX, virtualWidth, width));
-  lines.push(
-    chalk.hex("#555555")(" ← → pan  ·  add your forest to your README → ") +
-    chalk.hex(STATS_ACCENT)("honeytree badge"),
-  );
+  const includeStats = options.includeStats !== false;
+  if (includeStats) {
+    lines.push("");
+    lines.push(buildStatsLine(forest, biome, viewportX, virtualWidth, width));
+    lines.push(
+      chalk.hex("#555555")(" ← → pan  ·  add your forest to your README → ") +
+      chalk.hex(STATS_ACCENT)("honeytree badge"),
+    );
+  }
 
   return lines.join("\n");
 }
