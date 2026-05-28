@@ -24,5 +24,8 @@ next-app/lib/supabase.ts
 next-app/lib/supabase-browser.ts
 next-app/lib/device-codes.ts
 next-app/lib/rewards.ts
+next-app/lib/eligibility.ts
+next-app/lib/good-api.ts
+next-app/lib/*.test.ts
 next-app/components/user-forest-display.tsx
 next-app/supabase/
