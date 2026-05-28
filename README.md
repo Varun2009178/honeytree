@@ -2,7 +2,7 @@
 
 # Every Claude Code prompt plants a tree.
 
-https://github.com/Varun2009178/honeytree/raw/main/honeytree_correct_video.mp4
+<video src="https://github.com/Varun2009178/honeytree/raw/main/honeytree_correct_video.mp4" autoplay loop muted playsinline controls width="640"></video>
 
 **Honeytree grows a pixel-art forest in your terminal as you code with Claude Code.**
 **Then it lets you plant real ones.**
@@ -14,15 +14,16 @@ https://github.com/Varun2009178/honeytree/raw/main/honeytree_correct_video.mp4
 
 </div>
 
-## 3 commands. That's it.
+## Quick start
 
 ```bash
 npm install -g honeytree
 honeytree init
+honeytree login
 honeytree
 ```
 
-`honeytree init` registers a [Claude Code hook](https://docs.anthropic.com/en/docs/claude-code/hooks) that plants a tree after every prompt. Open a second terminal pane, run `honeytree`, and watch your forest grow in real time.
+`honeytree init` registers a [Claude Code hook](https://docs.anthropic.com/en/docs/claude-code/hooks) that plants a tree after every prompt. `honeytree login` links your terminal to your account so your forest syncs to the cloud. Open a second terminal pane, run `honeytree`, and watch your forest grow in real time.
 
 ---
 
