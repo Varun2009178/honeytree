@@ -4,7 +4,13 @@ import { getSupabase } from "@/lib/supabase"
 import { getNewRewards } from "@/lib/rewards"
 import { parseTreeId } from "@/lib/good-api"
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
+// Lazy init so a missing key at build time doesn't break `next build`.
+// The key is still read from the environment, only at request time.
+let _stripe: Stripe | null = null
+function getStripe(): Stripe {
+  if (!_stripe) _stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
+  return _stripe
+}
 
 export async function POST(req: NextRequest) {
   const body = await req.text()
@@ -16,7 +22,7 @@ export async function POST(req: NextRequest) {
 
   let event: Stripe.Event
   try {
-    event = stripe.webhooks.constructEvent(
+    event = getStripe().webhooks.constructEvent(
       body,
       sig,
       process.env.STRIPE_WEBHOOK_SECRET!

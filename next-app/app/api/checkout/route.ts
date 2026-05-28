@@ -4,7 +4,13 @@ import { createClient } from "@supabase/supabase-js"
 import { getSupabase } from "@/lib/supabase"
 import { availableToPlant, resolveQuantity } from "@/lib/eligibility"
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
+// Lazy init so a missing key at build time doesn't break `next build`.
+// The key is still read from the environment, only at request time.
+let _stripe: Stripe | null = null
+function getStripe(): Stripe {
+  if (!_stripe) _stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
+  return _stripe
+}
 
 async function getUserFromToken(req: NextRequest) {
   const auth = req.headers.get("authorization")
@@ -57,7 +63,7 @@ export async function POST(req: NextRequest) {
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
 
-  const session = await stripe.checkout.sessions.create({
+  const session = await getStripe().checkout.sessions.create({
     mode: "payment",
     line_items: [
       {
