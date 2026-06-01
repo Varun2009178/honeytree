@@ -33,13 +33,8 @@ A 3D forest that grows from your codebase. Every file becomes a tree — rendere
 No browser. No app. No install beyond npm.
 
 ```bash
-honeytree view ~/my-project
-```
-
-Or if installed globally:
-
-```bash
-honeytree view ~/my-project
+honeytree            # current directory
+honeytree view ~/my-project   # any directory
 ```
 
 ---
