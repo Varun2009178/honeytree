@@ -5,15 +5,42 @@
 [![npm version](https://img.shields.io/npm/v/honeytree.svg)](https://www.npmjs.com/package/honeytree)
 [![license](https://img.shields.io/npm/l/honeytree.svg)](https://github.com/Varun2009178/honeytree/blob/main/LICENSE)
 
+Honeytree grows a pixel-art forest in your terminal as you code with Claude Code. Then it lets you plant real ones.
+
+## Quick start
+
+```bash
+npm install -g honeytree
+honeytree init
+honeytree login
+honeytree
+```
+
+`honeytree init` registers a Claude Code hook that plants a tree after every prompt. `honeytree login` links your terminal to your account so your forest syncs to the cloud. Open a second terminal pane, run `honeytree`, and watch your forest grow in real time.
+
+### Plant real trees
+
+```bash
+honeytree plant
+```
+
+`honeytree plant` shows how many real trees you've unlocked (every 50 virtual trees = 1 real tree), opens your dashboard to complete a $1 planting via the Good API, then prints your receipt and any newly-unlocked badges right in the terminal. A keepsake receipt also lands in your inbox.
+
+## 3D codebase viewer
+
 A 3D forest that grows from your codebase. Every file becomes a tree — rendered as a rotatable point cloud right in your terminal using block characters (░▒▓█).
 
 No browser. No app. No install beyond npm.
 
 ```bash
-npx honeytree
+honeytree view ~/my-project
 ```
 
-That's it. One command. Run it in any project directory.
+Or if installed globally:
+
+```bash
+honeytree view ~/my-project
+```
 
 ---
 

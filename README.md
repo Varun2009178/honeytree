@@ -25,6 +25,14 @@ honeytree
 
 `honeytree init` registers a [Claude Code hook](https://docs.anthropic.com/en/docs/claude-code/hooks) that plants a tree after every prompt. `honeytree login` links your terminal to your account so your forest syncs to the cloud. Open a second terminal pane, run `honeytree`, and watch your forest grow in real time.
 
+### Plant real trees
+
+```bash
+honeytree plant
+```
+
+`honeytree plant` shows how many real trees you've unlocked (every 50 virtual trees = 1 real tree), opens your dashboard to complete a $1 planting via the Good API, then prints your receipt and any newly-unlocked badges right in the terminal. A keepsake receipt also lands in your inbox.
+
 ---
 
 ## What happens
@@ -98,7 +106,7 @@ Each source file becomes a tree. Files in the same folder cluster together. Modi
 |---------|-------------|
 | `honeytree` | Open the 2D forest viewer |
 | `honeytree init` | Register Claude Code hook |
-| `honeytree plant` | Plant a tree manually |
+| `honeytree plant` | Plant your unlocked real trees |
 | `honeytree view [dir]` | 3D codebase viewer |
 | `honeytree login` | Link terminal to your account |
 | `honeytree logout` | Remove stored credentials |
