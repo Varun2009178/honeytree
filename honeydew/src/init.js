@@ -20,7 +20,7 @@ const HONEYDEW_STOP_HOOK = {
   hooks: [
     {
       type: "command",
-      command: "honeytree plant",
+      command: "honeytree __tick",
     },
   ],
 };
@@ -28,9 +28,24 @@ const HONEYDEW_STOP_HOOK = {
 function hasHoneydewHook(settings) {
   return (
     settings?.hooks?.Stop?.some((entry) =>
-      entry?.hooks?.some((hook) => hook?.command === "honeytree plant"),
+      entry?.hooks?.some((hook) => hook?.command === "honeytree __tick"),
     ) ?? false
   );
+}
+
+// Rewrite any legacy `honeytree plant` Stop hook to the new hidden `__tick`.
+// Returns true if anything changed.
+function migrateLegacyHook(settings) {
+  let changed = false;
+  for (const entry of settings?.hooks?.Stop ?? []) {
+    for (const hook of entry?.hooks ?? []) {
+      if (hook?.command === "honeytree plant") {
+        hook.command = "honeytree __tick";
+        changed = true;
+      }
+    }
+  }
+  return changed;
 }
 
 export async function init() {
@@ -71,6 +86,12 @@ export async function init() {
 
   settings.hooks ??= {};
   settings.hooks.Stop ??= [];
+
+  const migrated = migrateLegacyHook(settings);
+  if (migrated) {
+    fs.writeFileSync(settingsPath, `${JSON.stringify(settings, null, 2)}\n`);
+    console.log(`Migrated legacy honeytree hook to __tick in ${settingsPath}`);
+  }
 
   if (hasHoneydewHook(settings)) {
     console.log(`Claude Code hook already configured in ${settingsPath}`);
