@@ -1,4 +1,4 @@
-import { exec } from "node:child_process";
+import { execFile } from "node:child_process";
 import { isLoggedIn, loginWithDevice, getAuth } from "./auth.js";
 import { readForest } from "./state.js";
 import { syncToCloud } from "./sync.js";
@@ -39,10 +39,15 @@ export function findNewBadgeLabels(baselineSlugs, currentBadges) {
 // ---- I/O glue ----
 
 function openBrowser(url) {
-  const cmd =
-    process.platform === "darwin" ? "open" :
-    process.platform === "win32" ? "start \"\"" : "xdg-open";
-  exec(`${cmd} "${url}"`, () => {});
+  // Use execFile (no shell) so the URL is passed as a literal argument, never
+  // interpolated into a shell command. On Windows, `start` is a cmd builtin.
+  const [cmd, args] =
+    process.platform === "darwin" ? ["open", [url]] :
+    process.platform === "win32" ? ["cmd", ["/c", "start", "", url]] :
+    ["xdg-open", [url]];
+  execFile(cmd, args, (err) => {
+    if (err) console.warn(`  (Could not open the browser automatically — visit ${url})`);
+  });
 }
 
 async function fetchStats() {

@@ -12,6 +12,11 @@ describe("formatAvailability", () => {
     assert.match(out, /2 real tree/);
     assert.match(out, /13 virtual trees/);
   });
+  it("uses the singular for exactly one ready tree", () => {
+    const out = formatAvailability({ available: 1, virtualTrees: 50, virtualToNext: 50 }).join("\n");
+    assert.match(out, /1 real tree ready/);
+    assert.doesNotMatch(out, /1 real trees/);
+  });
   it("reports when none are ready yet", () => {
     const out = formatAvailability({ available: 0, virtualTrees: 10, virtualToNext: 40 }).join("\n");
     assert.match(out, /40 virtual trees/);
