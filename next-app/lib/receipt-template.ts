@@ -29,7 +29,8 @@ export function receiptSubject(model: ReceiptModel): string {
 
 export function renderReceiptText(model: ReceiptModel): string {
   const lines: string[] = []
-  lines.push(asciiTreeFor(model))
+  lines.push(asciiTreeFor(model).replace(/^\n+|\n+$/g, ""))
+  lines.push("")
   lines.push(`You planted ${model.yourTreeLabel}.`)
   lines.push(`Globally, that's tree #${model.globalNumber}.`)
   lines.push("")
@@ -41,7 +42,7 @@ export function renderReceiptText(model: ReceiptModel): string {
   lines.push(`  • ${model.streak} day streak`)
   lines.push("")
   if (model.badges.length > 0) {
-    lines.push("Badges unlocked:")
+    lines.push("Your badges:")
     for (const b of model.badges) {
       const isNew = model.newBadges.some((n) => n.slug === b.slug)
       lines.push(`  • ${b.label}${isNew ? "  (new!)" : ""}`)
@@ -74,7 +75,7 @@ export function renderReceiptHtml(model: ReceiptModel): string {
       model.project ? ` — ${escapeHtml(model.project)}` : ""
     }</p>
     <p style="margin:12px 0;">🌳 ${model.virtualTrees} virtual trees · 🔥 ${model.streak} day streak</p>
-    ${model.badges.length ? `<p style="margin:12px 0 4px;">Badges unlocked:</p><ul>${badgeItems}</ul>` : ""}
+    ${model.badges.length ? `<p style="margin:12px 0 4px;">Your badges:</p><ul>${badgeItems}</ul>` : ""}
     <p style="margin:24px 0 0;color:#a8a29e;">Thank you for growing a real forest with Honeytree.</p>
     <p style="margin:4px 0;"><a href="https://tryhoney.xyz/dashboard" style="color:#f59e0b;">View your forest →</a></p>
   </div>
