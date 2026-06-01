@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import Stripe from "stripe"
 import { getSupabase } from "@/lib/supabase"
-import { getNewRewards } from "@/lib/rewards"
-import { parseTreeId } from "@/lib/good-api"
+import { getNewRewards, REWARD_THRESHOLDS } from "@/lib/rewards"
+import { parseTreeId, parseProject, parseLocation, parseGlobalNumber } from "@/lib/good-api"
+import { buildReceiptModel } from "@/lib/receipt"
+import { sendReceiptEmail } from "@/lib/email"
 
 // Lazy init so a missing key at build time doesn't break `next build`.
 // The key is still read from the environment, only at request time.
@@ -53,6 +55,7 @@ export async function POST(req: NextRequest) {
       // Plant the real tree(s) via Good API.
       let treeId: string | null = null
       let status: "completed" | "pending" = "pending"
+      let goodJson: unknown = null
       const goodApiKey = process.env.GOOD_API_KEY_TEST
       if (goodApiKey) {
         try {
@@ -76,7 +79,8 @@ export async function POST(req: NextRequest) {
           if (goodRes.ok) {
             // Reward eligible on success, regardless of response shape.
             status = "completed"
-            treeId = parseTreeId(await goodRes.json())
+            goodJson = await goodRes.json()
+            treeId = parseTreeId(goodJson)
           }
         } catch {
           // Leave as pending; reward not granted until Good API confirms.
@@ -90,6 +94,7 @@ export async function POST(req: NextRequest) {
         real_trees_planted: quantity,
         one_tree_planted_id: treeId,
         status,
+        good_api_response: goodJson,
       })
 
       if (status === "completed") {
@@ -116,6 +121,64 @@ export async function POST(req: NextRequest) {
           await supabase.from("rewards").insert(
             newRewards.map((r) => ({ user_id: userId, badge_slug: r.slug }))
           )
+        }
+
+        // ---- Receipt email (best-effort; must never throw) ----
+        try {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("email")
+            .eq("id", userId)
+            .maybeSingle()
+          const { data: treesRow } = await supabase
+            .from("trees")
+            .select("count, streak")
+            .eq("user_id", userId)
+            .maybeSingle()
+
+          // Global completed total across all users (after this transaction)
+          const { data: globalRows } = await supabase
+            .from("plantings")
+            .select("real_trees_planted")
+            .eq("status", "completed")
+          const globalCompletedTotal = (globalRows || []).reduce(
+            (sum, p) => sum + (p.real_trees_planted || 0),
+            0
+          )
+
+          const { data: rewardsAfter } = await supabase
+            .from("rewards")
+            .select("badge_slug")
+            .eq("user_id", userId)
+          const unlockedSlugsAfter = (rewardsAfter || []).map((r) => r.badge_slug)
+          const badges = REWARD_THRESHOLDS.filter((r) =>
+            unlockedSlugsAfter.includes(r.slug)
+          ).map((r) => ({ slug: r.slug, label: r.label }))
+
+          const model = buildReceiptModel({
+            quantity,
+            priorRealTrees: Math.max(0, totalReal - quantity),
+            globalBaseOffset: Number(process.env.GLOBAL_BASE_OFFSET) || 48000,
+            globalCompletedTotal,
+            goodApiLocation: parseLocation(goodJson),
+            goodApiProject: parseProject(goodJson),
+            goodApiGlobalNumber: parseGlobalNumber(goodJson),
+            fallbackLocation: "a reforestation project via One Tree Planted",
+            virtualTrees: treesRow?.count ?? 0,
+            streak: treesRow?.streak ?? 0,
+            badges,
+            newBadgeSlugs: newRewards.map((r) => r.slug),
+          })
+
+          if (profile?.email) {
+            await sendReceiptEmail(profile.email, model)
+            await supabase
+              .from("plantings")
+              .update({ email_sent_at: new Date().toISOString() })
+              .eq("stripe_session_id", session.id)
+          }
+        } catch (e) {
+          console.error("[webhook] receipt email step failed:", e)
         }
       }
     }
