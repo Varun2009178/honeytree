@@ -136,21 +136,33 @@ export async function POST(req: NextRequest) {
             .eq("user_id", userId)
             .maybeSingle()
 
-          // Global completed total across all users (after this transaction)
-          const { data: globalRows } = await supabase
+          // Global completed total across all users (after this transaction).
+          // Prefer a DB-side aggregate (avoids the row-limit cap); fall back to a
+          // row scan if PostgREST aggregates aren't enabled.
+          let globalCompletedTotal = 0
+          const { data: agg, error: aggError } = await supabase
             .from("plantings")
-            .select("real_trees_planted")
+            .select("total:real_trees_planted.sum()")
             .eq("status", "completed")
-          const globalCompletedTotal = (globalRows || []).reduce(
-            (sum, p) => sum + (p.real_trees_planted || 0),
-            0
-          )
+            .single()
+          if (!aggError && typeof (agg as { total?: number } | null)?.total === "number") {
+            globalCompletedTotal = (agg as { total: number }).total
+          } else {
+            const { data: globalRows } = await supabase
+              .from("plantings")
+              .select("real_trees_planted")
+              .eq("status", "completed")
+            globalCompletedTotal = (globalRows || []).reduce(
+              (sum, p) => sum + (p.real_trees_planted || 0),
+              0
+            )
+          }
 
-          const { data: rewardsAfter } = await supabase
-            .from("rewards")
-            .select("badge_slug")
-            .eq("user_id", userId)
-          const unlockedSlugsAfter = (rewardsAfter || []).map((r) => r.badge_slug)
+          // Post-grant badge set, reusing data already in scope (no extra round-trip).
+          const unlockedSlugsAfter = [
+            ...existingSlugs,
+            ...newRewards.map((r) => r.slug),
+          ]
           const badges = REWARD_THRESHOLDS.filter((r) =>
             unlockedSlugsAfter.includes(r.slug)
           ).map((r) => ({ slug: r.slug, label: r.label }))
