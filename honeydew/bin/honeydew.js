@@ -5,8 +5,12 @@ const command = process.argv[2];
 if (command === "init") {
   const { init } = await import("../src/init.js");
   await init();
+} else if (command === "__tick") {
+  // Hidden: invoked by the Claude Code Stop hook to grow the forest each prompt.
+  const { tick } = await import("../src/plant.js");
+  await tick();
 } else if (command === "plant") {
-  const { plant } = await import("../src/plant.js");
+  const { plant } = await import("../src/plant-real.js");
   await plant();
 } else if (command === "badge") {
   const { badge } = await import("../src/badge.js");
@@ -72,6 +76,6 @@ if (command === "init") {
   }
 } else {
   console.error(`Unknown command: ${command}`);
-  console.error("Usage: honeytree [init|plant|badge|md|view <dir>|login|logout|sync|status|rewards]");
+  console.error("Usage: honeytree [init|login|plant|view <dir>|badge|md|logout|sync|status|rewards]");
   process.exit(1);
 }

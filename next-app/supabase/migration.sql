@@ -65,3 +65,10 @@ alter table public.plantings
 
 create unique index if not exists plantings_stripe_session_id_key
   on public.plantings (stripe_session_id);
+
+-- Receipts: store the raw Good API response and when the receipt email was sent
+alter table public.plantings
+  add column if not exists good_api_response jsonb;
+
+alter table public.plantings
+  add column if not exists email_sent_at timestamptz;
