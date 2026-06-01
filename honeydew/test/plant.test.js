@@ -7,10 +7,10 @@ import { afterEach, beforeEach, describe, it } from "node:test";
 const TEST_DIR = path.join(os.tmpdir(), `honeydew-plant-${Date.now()}`);
 process.env.HONEYDEW_DIR = TEST_DIR;
 
-const { plant, getVirtualWidth } = await import("../src/plant.js");
+const { tick, getVirtualWidth } = await import("../src/plant.js");
 const { createEmptyForest, readForest, writeForest } = await import("../src/state.js");
 
-describe("plant", () => {
+describe("tick", () => {
   beforeEach(() => {
     fs.mkdirSync(TEST_DIR, { recursive: true });
     writeForest(createEmptyForest());
@@ -21,14 +21,14 @@ describe("plant", () => {
   });
 
   it("adds a tree to an empty forest", async () => {
-    await plant();
+    await tick();
     const forest = readForest();
     assert.equal(forest.trees.length, 1);
     assert.equal(forest.totalPrompts, 1);
   });
 
   it("adds the required tree fields", async () => {
-    await plant();
+    await tick();
     const [tree] = readForest().trees;
     assert.ok(["oak", "pine", "birch", "willow", "cherry"].includes(tree.type));
     assert.ok(tree.growth >= 0.3 && tree.growth <= 1);
@@ -38,9 +38,9 @@ describe("plant", () => {
   });
 
   it("increments ids", async () => {
-    await plant();
-    await plant();
-    await plant();
+    await tick();
+    await tick();
+    await tick();
     const ids = readForest().trees.map((tree) => tree.id);
     assert.deepEqual(ids, [1, 2, 3]);
   });
@@ -56,7 +56,7 @@ describe("plant", () => {
     });
     writeForest(forest);
 
-    await plant();
+    await tick();
 
     const updated = readForest();
     const originalTree = updated.trees.find((tree) => tree.id === 1);
@@ -75,7 +75,7 @@ describe("plant", () => {
     });
     writeForest(forest);
 
-    await plant();
+    await tick();
 
     const updated = readForest();
     assert.equal(updated.trees.find((tree) => tree.id === 1).growth, 1);
@@ -94,7 +94,7 @@ describe("plant", () => {
     }
     writeForest(forest);
 
-    await plant();
+    await tick();
 
     const updated = readForest();
     const newTree = updated.trees.find((tree) => tree.id === 51);
@@ -115,7 +115,7 @@ describe("plant", () => {
     }
     writeForest(forest);
 
-    await plant();
+    await tick();
 
     const updated = readForest();
     assert.equal(updated.layoutVersion, 2);

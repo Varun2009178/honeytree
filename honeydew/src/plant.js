@@ -74,7 +74,7 @@ function daysBetween(dateA, dateB) {
   return Math.round(Math.abs(b - a) / (24 * 60 * 60 * 1000));
 }
 
-export async function plant() {
+export async function tick() {
   const forest = readForest() ?? createEmptyForest();
   const width = getPlantWidth(forest);
 
