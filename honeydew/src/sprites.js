@@ -336,11 +336,28 @@ function getGrowthStage(growth) {
   return "full";
 }
 
-export function getSprite(type, growth) {
-  const spriteSet = SPRITES[type];
-  if (!spriteSet) {
-    throw new Error(`Unknown tree type: ${type}`);
+// rows are stored bottom-first (row[0] is the ground row). Adding trunk rows at
+// the bottom makes the trunk taller and pushes the canopy up.
+function addTrunkRows(sprite, n) {
+  const bottom = sprite.rows[0] || [];
+  const trunkRow = bottom.map((cell) => (cell && cell[1] ? ["█", cell[1]] : [" ", null]));
+  const extra = Array.from({ length: n }, () => trunkRow.map((c) => [c[0], c[1]]));
+  return { rows: [...extra, ...sprite.rows], width: sprite.width };
+}
+
+export function getSprite(type, growth, opts = {}) {
+  const { heightBonus = 0, variant = null } = opts;
+  let sprite;
+  if (variant === "ancient") {
+    sprite = getAncientSprite(growth);
+  } else {
+    const spriteSet = SPRITES[type];
+    if (!spriteSet) {
+      throw new Error(`Unknown tree type: ${type}`);
+    }
+    sprite = spriteSet[getGrowthStage(growth)];
   }
-  return spriteSet[getGrowthStage(growth)];
+  if (heightBonus > 0) sprite = addTrunkRows(sprite, heightBonus);
+  return sprite;
 }
 
