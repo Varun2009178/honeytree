@@ -17,7 +17,7 @@ export function getVirtualWidth(treeCount, termWidth) {
   return Math.max(termWidth, treeCount * TREE_SPACING);
 }
 
-function getPlantWidth(forest) {
+export function getPlantWidth(forest) {
   const termWidth = forest.viewerWidth && forest.viewerWidth > 40
     ? forest.viewerWidth
     : DEFAULT_WIDTH;
@@ -41,7 +41,7 @@ function occupiedRanges(trees) {
   });
 }
 
-function findOpenX(trees, type, growth, width) {
+export function findOpenX(trees, type, growth, width) {
   const sprite = getSprite(type, growth);
   const half = Math.floor(sprite.width / 2);
   const margin = half + 1;
@@ -74,7 +74,7 @@ function daysBetween(dateA, dateB) {
   return Math.round(Math.abs(b - a) / (24 * 60 * 60 * 1000));
 }
 
-export async function tick() {
+export async function tick(shape = null) {
   const forest = readForest() ?? createEmptyForest();
   const width = getPlantWidth(forest);
 
@@ -108,17 +108,15 @@ export async function tick() {
   }
 
   const availableTypes = hasCherryBlossom() ? TREE_TYPES_WITH_BLOSSOM : TREE_TYPES;
-  const type = randomItem(availableTypes);
-  const growth = randomGrowth();
+  const type = shape?.type ?? randomItem(availableTypes);
+  const growth = typeof shape?.growth === "number" ? shape.growth : randomGrowth();
   const nextId = forest.trees.reduce((max, tree) => Math.max(max, tree.id), 0) + 1;
+  const x = typeof shape?.x === "number" ? shape.x : findOpenX(forest.trees, type, growth, width);
 
-  forest.trees.push({
-    id: nextId,
-    type,
-    growth,
-    x: findOpenX(forest.trees, type, growth, width),
-    plantedAt: new Date().toISOString(),
-  });
+  const tree = { id: nextId, type, growth, x, plantedAt: new Date().toISOString() };
+  if (shape?.heightBonus) tree.heightBonus = shape.heightBonus;
+  if (shape?.variant) tree.variant = shape.variant;
+  forest.trees.push(tree);
   forest.totalPrompts += 1;
 
   writeForest(forest);
