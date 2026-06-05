@@ -5,10 +5,25 @@ const command = process.argv[2];
 if (command === "init") {
   const { init } = await import("../src/init.js");
   await init();
+} else if (command === "__session") {
+  // Hidden: UserPromptSubmit hook — marks the start of a turn (token baseline + chosen tree).
+  try {
+    const { readStdin } = await import("../src/stdin.js");
+    const { startTurn } = await import("../src/turn.js");
+    const payload = JSON.parse((await readStdin()) || "{}");
+    startTurn(payload);
+  } catch {}
 } else if (command === "__tick") {
-  // Hidden: invoked by the Claude Code Stop hook to grow the forest each prompt.
+  // Hidden: Stop hook — finalizes this turn's token-sized tree (random fallback).
   const { tick } = await import("../src/plant.js");
-  await tick();
+  let shape = null;
+  try {
+    const { readStdin } = await import("../src/stdin.js");
+    const { computeTickShape } = await import("../src/turn.js");
+    const payload = JSON.parse((await readStdin()) || "{}");
+    shape = computeTickShape(payload);
+  } catch {}
+  await tick(shape);
 } else if (command === "plant") {
   const { plant } = await import("../src/plant-real.js");
   await plant();
