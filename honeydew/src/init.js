@@ -25,10 +25,28 @@ const HONEYDEW_STOP_HOOK = {
   ],
 };
 
+const HONEYDEW_SESSION_HOOK = {
+  matcher: "",
+  hooks: [
+    {
+      type: "command",
+      command: "honeytree __session",
+    },
+  ],
+};
+
 function hasHoneydewHook(settings) {
   return (
     settings?.hooks?.Stop?.some((entry) =>
       entry?.hooks?.some((hook) => hook?.command === "honeytree __tick"),
+    ) ?? false
+  );
+}
+
+function hasSessionHook(settings) {
+  return (
+    settings?.hooks?.UserPromptSubmit?.some((entry) =>
+      entry?.hooks?.some((hook) => hook?.command === "honeytree __session"),
     ) ?? false
   );
 }
@@ -99,6 +117,13 @@ export async function init() {
     settings.hooks.Stop.push(HONEYDEW_STOP_HOOK);
     fs.writeFileSync(settingsPath, `${JSON.stringify(settings, null, 2)}\n`);
     console.log(`Added honeytree Stop hook to ${settingsPath}`);
+  }
+
+  settings.hooks.UserPromptSubmit ??= [];
+  if (!hasSessionHook(settings)) {
+    settings.hooks.UserPromptSubmit.push(HONEYDEW_SESSION_HOOK);
+    fs.writeFileSync(settingsPath, `${JSON.stringify(settings, null, 2)}\n`);
+    console.log(`Added honeytree UserPromptSubmit hook to ${settingsPath}`);
   }
 
   console.log("");

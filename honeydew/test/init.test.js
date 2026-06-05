@@ -41,4 +41,19 @@ describe("init hook wiring", () => {
     assert.ok(cmds.includes("honeytree __tick"));
     assert.ok(!cmds.includes("honeytree plant"));
   });
+
+  it("adds the UserPromptSubmit __session hook on a fresh install", async () => {
+    await init();
+    const s = JSON.parse(fs.readFileSync(settingsPath(), "utf8"));
+    const cmds = (s.hooks.UserPromptSubmit || []).flatMap((e) => e.hooks.map((h) => h.command));
+    assert.ok(cmds.includes("honeytree __session"));
+  });
+
+  it("is idempotent for the __session hook", async () => {
+    await init();
+    await init();
+    const s = JSON.parse(fs.readFileSync(settingsPath(), "utf8"));
+    const cmds = (s.hooks.UserPromptSubmit || []).flatMap((e) => e.hooks.map((h) => h.command));
+    assert.equal(cmds.filter((c) => c === "honeytree __session").length, 1);
+  });
 });
