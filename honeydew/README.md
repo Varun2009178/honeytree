@@ -18,6 +18,10 @@ honeytree
 
 `honeytree init` registers a Claude Code hook that plants a tree after every prompt. `honeytree login` links your terminal to your account so your forest syncs to the cloud. Open a second terminal pane, run `honeytree`, and watch your forest grow in real time.
 
+**Live growth:** keep `honeytree` open in a second pane while you use Claude Code — the
+current turn's tree grows in real time as the response streams, and bigger turns grow
+taller (occasionally rare golden) trees. One prompt still plants one tree.
+
 ### Plant real trees
 
 ```bash
