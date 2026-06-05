@@ -374,7 +374,10 @@ export function renderFrame(forest, termWidth = 80, options = {}) {
       // Ancient: 1 in 8 trees become tall golden trees
       sprite = getAncientSprite(tree.growth);
     } else {
-      sprite = getSprite(tree.type, tree.growth);
+      sprite = getSprite(tree.type, tree.growth, {
+        heightBonus: tree.heightBonus || 0,
+        variant: tree.variant || null,
+      });
     }
     const canopyShiftX = getWindOffset(tree.id, windTick);
     compositeSprite(buffer, sprite, tree.x, treeBaseY - yOffset, canopyShiftX);
@@ -518,7 +521,12 @@ export function buildScene(forest, width) {
   const treeBaseY = groundStart - 1;
   for (const tree of forest.trees) {
     const yOffset = getTreeYOffset(tree.id);
-    compositeSprite(buffer, getSprite(tree.type, tree.growth), tree.x, treeBaseY - yOffset);
+    compositeSprite(
+      buffer,
+      getSprite(tree.type, tree.growth, { heightBonus: tree.heightBonus || 0, variant: tree.variant || null }),
+      tree.x,
+      treeBaseY - yOffset,
+    );
   }
 
   renderGroundDetails(buffer, biome, w, groundStart);
@@ -557,7 +565,12 @@ export function renderPlainText(forest, width = 60) {
   const treeBaseY = groundStart - 1;
   for (const tree of forest.trees) {
     const yOffset = getTreeYOffset(tree.id);
-    compositeSprite(buffer, getSprite(tree.type, tree.growth), tree.x, treeBaseY - yOffset);
+    compositeSprite(
+      buffer,
+      getSprite(tree.type, tree.growth, { heightBonus: tree.heightBonus || 0, variant: tree.variant || null }),
+      tree.x,
+      treeBaseY - yOffset,
+    );
   }
 
   const lines = [];
