@@ -371,8 +371,11 @@ export function renderFrame(forest, termWidth = 80, options = {}) {
     if (spriteOverride && spriteOverride.treeId === tree.id) {
       sprite = spriteOverride.sprite;
     } else if (hasAncient && hash(tree.id * 37) % 8 === 0) {
-      // Ancient: 1 in 8 trees become tall golden trees
-      sprite = getAncientSprite(tree.growth);
+      // Ancient: 1 in 8 trees become tall golden trees (still honor heightBonus)
+      sprite = getSprite(tree.type, tree.growth, {
+        heightBonus: tree.heightBonus || 0,
+        variant: "ancient",
+      });
     } else {
       sprite = getSprite(tree.type, tree.growth, {
         heightBonus: tree.heightBonus || 0,
