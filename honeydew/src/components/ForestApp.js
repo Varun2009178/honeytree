@@ -16,6 +16,10 @@ import { migrateLayout } from "../migrate.js";
 import { getVirtualWidth } from "../plant.js";
 import { getAnimationFrames } from "../animation.js";
 import { createForestWatcher } from "../viewer2d.js";
+import { readActiveSession, isStale } from "../session.js";
+import { readNewTokens } from "../transcript.js";
+import { tokensToTree } from "../growth.js";
+import LiveTree from "./LiveTree.js";
 
 const h = React.createElement;
 const PAN_STEP = 4;
@@ -50,6 +54,10 @@ export default function ForestApp() {
   const [groundPulse, setGroundPulse] = useState(false);
   const [milestonePrompt, setMilestonePrompt] = useState(null);
   const [rewards, setRewards] = useState(() => getRewards());
+
+  const [activeTree, setActiveTree] = useState(null);
+  const [liveTokens, setLiveTokens] = useState(0);
+  const tailRef = useRef({ path: null, offset: 0, tokens: 0, startedAt: 0 });
 
   const ignoreNextChange = useRef(false);
   const lastMaxId = useRef(forest.trees.reduce((max, t) => Math.max(max, t.id), 0));
@@ -104,6 +112,44 @@ export default function ForestApp() {
     }, 2500);
     return () => clearInterval(id);
   }, [animating]);
+
+  // Live growth: tail the active Claude Code session transcript.
+  useEffect(() => {
+    const id = setInterval(() => {
+      const s = readActiveSession();
+      if (!s || isStale(s)) {
+        if (tailRef.current.path) {
+          tailRef.current = { path: null, offset: 0, tokens: 0, startedAt: 0 };
+          setActiveTree(null);
+          setLiveTokens(0);
+        }
+        return;
+      }
+      if (tailRef.current.path !== s.transcript_path || tailRef.current.startedAt !== s.turnStartedAt) {
+        tailRef.current = {
+          path: s.transcript_path,
+          offset: s.baselineOffset || 0,
+          tokens: 0,
+          startedAt: s.turnStartedAt,
+        };
+      }
+      const { tokens, newOffset } = readNewTokens(tailRef.current.path, tailRef.current.offset);
+      tailRef.current.offset = newOffset;
+      tailRef.current.tokens += tokens;
+      const shape = tokensToTree(tailRef.current.tokens);
+      setLiveTokens(tailRef.current.tokens);
+      setActiveTree({
+        id: -1,
+        type: s.type || "oak",
+        x: typeof s.x === "number" ? s.x : 0,
+        growth: shape.growth,
+        heightBonus: shape.heightBonus,
+        variant: shape.variant,
+        plantedAt: new Date().toISOString(),
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, []);
 
   // Resize handler
   useEffect(() => {
@@ -160,6 +206,9 @@ export default function ForestApp() {
       lastTotalPrompts.current = updated.totalPrompts;
       setForest(updated);
       forestRef.current = updated;
+      setActiveTree(null);
+      setLiveTokens(0);
+      tailRef.current = { path: null, offset: 0, tokens: 0, startedAt: 0 };
 
       // Check for milestone flag
       try {
@@ -308,9 +357,13 @@ export default function ForestApp() {
     ? visibleTrees[selectedTreeIdx]
     : null;
 
+  const liveForest = activeTree
+    ? { ...forest, trees: [...forest.trees, activeTree] }
+    : forest;
+
   return h(Box, { flexDirection: "column" },
     h(ForestScene, {
-      forest,
+      forest: liveForest,
       viewportX,
       windTick,
       termWidth,
@@ -320,6 +373,7 @@ export default function ForestApp() {
       rewards,
     }),
     h(StatsBar, { forest, viewportX, termWidth, rewards }),
+    activeTree ? h(LiveTree, { tokens: liveTokens }) : null,
     showPopup && selectedTree ? h(TreeInfoPopup, { tree: selectedTree }) : null,
     milestonePrompt ? h(Box, { flexDirection: "column", paddingX: 1 },
       h(Text, { color: "green", bold: true },
