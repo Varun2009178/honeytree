@@ -16,7 +16,7 @@ function sumOutputTokens(text) {
   return total;
 }
 
-function readFrom(filePath, fromOffset) {
+function readFrom(filePath, fromOffset, maxBytes = Infinity) {
   let stat;
   try {
     stat = fs.statSync(filePath);
@@ -26,7 +26,7 @@ function readFrom(filePath, fromOffset) {
   if (stat.size <= fromOffset) return { text: "", size: stat.size };
   const fd = fs.openSync(filePath, "r");
   try {
-    const len = stat.size - fromOffset;
+    const len = Math.min(stat.size - fromOffset, maxBytes);
     const buf = Buffer.alloc(len);
     fs.readSync(fd, buf, 0, len, fromOffset);
     return { text: buf.toString("utf8"), size: stat.size };
@@ -34,6 +34,11 @@ function readFrom(filePath, fromOffset) {
     fs.closeSync(fd);
   }
 }
+
+// Cap each live tail read so a runaway/unterminated transcript line can't
+// allocate unbounded memory on the 1s viewer interval. The Stop-time full
+// read (readTurnTokens) stays uncapped so a turn is always totalled correctly.
+const MAX_LIVE_READ = 1024 * 1024;
 
 // Sum all output tokens from `fromOffset` to EOF (turn is complete at Stop).
 export function readTurnTokens(filePath, fromOffset) {
@@ -45,7 +50,7 @@ export function readTurnTokens(filePath, fromOffset) {
 // Read only complete (newline-terminated) lines; leave a partial trailing line
 // for the next read by not advancing the offset past it.
 export function readNewTokens(filePath, fromOffset) {
-  const r = readFrom(filePath, fromOffset);
+  const r = readFrom(filePath, fromOffset, MAX_LIVE_READ);
   if (!r) return { tokens: 0, newOffset: fromOffset };
   if (!r.text) return { tokens: 0, newOffset: fromOffset };
   const lastNl = r.text.lastIndexOf("\n");
