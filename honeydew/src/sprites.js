@@ -1,5 +1,4 @@
 export const TREE_TYPES = ["oak", "pine", "birch", "willow", "cherry"];
-export const TREE_TYPES_WITH_BLOSSOM = ["oak", "pine", "birch", "willow", "cherry", "cherry_blossom"];
 
 const COLORS = {
   canopyDark: "#3f7132",
@@ -23,14 +22,6 @@ const BLOSSOM_COLORS = {
 };
 
 // Teal palette for "Grove" status unlock
-export const TEAL_COLORS = {
-  canopyDark: "#1a7a6a",
-  canopyMid: "#2eb8a0",
-  canopyLight: "#5de0c8",
-  trunkDark: "#4a6b5f",
-  trunkMid: "#6a8b7f",
-};
-
 // Gold palette for "Ancient Forest" tall trees
 export const GOLD_COLORS = {
   canopyTop: "#FFD700",

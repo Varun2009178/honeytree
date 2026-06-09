@@ -111,7 +111,7 @@ export async function plant() {
 
     const treesPlanted = newlyPlanted.reduce((s, p) => s + (p.real_trees_planted || 0), 0);
     const newBadges = findNewBadgeLabels(baselineBadgeSlugs, latest.badges);
-    const hasBloomer = (latest.badges || []).some((b) => b.slug === "bloomer" && b.unlocked);
+    const hasBloomer = (latest.badges || []).some((b) => b.slug === "cherry" && b.unlocked);
 
     console.log("");
     console.log(asciiTree(hasBloomer));

@@ -50,14 +50,9 @@ export default function StatsBar({ forest, viewportX, termWidth, rewards }) {
       ? h(Text, { color: STREAK_COLOR }, `${stats.streak}-day streak`)
       : h(Text, { color: STATS_TEXT }, "no streak");
 
-  const planterBadge = rewards && rewards.planter
-    ? h(Text, { color: "#6cb95e" }, " 🌱 Planter")
-    : null;
-
   return h(Box, { flexDirection: "column" },
     h(Box, null,
       h(Text, { color: STATS_ACCENT }, " honeytree"),
-      planterBadge,
       h(Text, { color: STATS_TEXT }, ` · ${stats.treeCount} tree${stats.treeCount === 1 ? "" : "s"} · `),
       streakSegment,
       h(Text, { color: STATS_TEXT }, " · "),

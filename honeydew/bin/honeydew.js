@@ -59,8 +59,7 @@ if (command === "init") {
   const rewards = await syncRewards();
   if (rewards && rewards.badges.length > 0) {
     console.log(`  Badges: ${rewards.badges.map(b => b.label).join(", ")}`);
-    if (rewards.cherry_blossom) console.log("  Cherry blossom trees unlocked!");
-    if (rewards.grove) console.log("  Grove status unlocked — teal palette active!");
+    if (rewards.cherry) console.log("  Cherry blossom trees unlocked!");
   }
   console.log("  Done.");
 } else if (command === "rewards") {
