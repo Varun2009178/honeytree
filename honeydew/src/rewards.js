@@ -1,24 +1,27 @@
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
+import { VARIETIES } from "./varieties.js";
 
 const REWARDS_FILE = path.join(os.homedir(), ".honeydew", "rewards.json");
 
 const TIERS = [
-  { slug: "planter", label: "Planter", threshold: 1, description: "Badge on status line" },
-  { slug: "bloomer", label: "Bloomer", threshold: 5, description: "Cherry blossom canopy in forest" },
-  { slug: "grove", label: "Grove", threshold: 10, description: "Teal ground and trunk palette" },
-  { slug: "ancient", label: "Ancient Forest", threshold: 25, description: "Rare tall golden trees" },
-  { slug: "legend", label: "Legend", threshold: 50, description: "Username above your forest" },
+  { slug: "cherry",  label: "Cherry Blossom", threshold: 1,  description: "Cherry blossom trees in your forest" },
+  { slug: "pine",    label: "Pine",           threshold: 5,  description: "Evergreen pines in your forest" },
+  { slug: "oak",     label: "Oak",            threshold: 10, description: "Broad oaks in your forest" },
+  { slug: "ancient", label: "Ancient",        threshold: 25, description: "Rare tall golden ancients" },
+  { slug: "mythic",  label: "Mythic",         threshold: 50, description: "Glowing mythic trees" },
 ];
 
 export { TIERS };
 
 export function getRewards() {
   try {
-    return JSON.parse(fs.readFileSync(REWARDS_FILE, "utf8"));
+    const data = JSON.parse(fs.readFileSync(REWARDS_FILE, "utf8"));
+    if (!Array.isArray(data.celebrated)) data.celebrated = [];
+    return data;
   } catch {
-    return { badges: [], planter: false, bloomer: false, grove: false, ancient: false, legend: false, username: "" };
+    return { badges: [], cherry: false, pine: false, oak: false, ancient: false, mythic: false, celebrated: [], username: "" };
   }
 }
 
@@ -32,9 +35,8 @@ export function hasReward(slug) {
   return getRewards()[slug] === true;
 }
 
-// Back-compat aliases
-export function hasCherryBlossom() { return hasReward("bloomer"); }
-export function hasGroveStatus() { return hasReward("grove"); }
+// Back-compat alias used by the renderer's blossom branch.
+export function hasCherryBlossom() { return hasReward("cherry"); }
 
 // Fetch rewards from server and cache locally
 export async function syncRewards(apiUrl) {
@@ -56,11 +58,12 @@ export async function syncRewards(apiUrl) {
 
     const data = {
       badges: unlocked.map((r) => ({ slug: r.slug, label: r.label, description: r.description })),
-      planter: slugs.includes("planter"),
-      bloomer: slugs.includes("bloomer"),
-      grove: slugs.includes("grove"),
+      cherry: slugs.includes("cherry"),
+      pine: slugs.includes("pine"),
+      oak: slugs.includes("oak"),
       ancient: slugs.includes("ancient"),
-      legend: slugs.includes("legend"),
+      mythic: slugs.includes("mythic"),
+      celebrated: getRewards().celebrated,
       username: auth.username || "",
     };
 
@@ -88,4 +91,29 @@ export function printRewardsStatus(realTreesPlanted = 0) {
     }
   }
   console.log();
+}
+
+// Unlocked variety keys (always includes "standard"), read from the local cache.
+export function getUnlockedVarietyKeys() {
+  const r = getRewards();
+  return VARIETIES.filter((v) => v.key === "standard" || r[v.key] === true).map((v) => v.key);
+}
+
+// Mark a variety's celebration as shown (idempotent).
+export function markCelebrated(key) {
+  const r = getRewards();
+  if (!Array.isArray(r.celebrated)) r.celebrated = [];
+  if (!r.celebrated.includes(key)) {
+    r.celebrated.push(key);
+    saveRewards(r);
+  }
+}
+
+// Unlocked varieties (excluding standard) whose celebration has not been shown.
+export function uncelebratedUnlocked() {
+  const r = getRewards();
+  const celebrated = new Set(r.celebrated || []);
+  return VARIETIES
+    .filter((v) => v.key !== "standard" && r[v.key] === true && !celebrated.has(v.key))
+    .map((v) => v.key);
 }
