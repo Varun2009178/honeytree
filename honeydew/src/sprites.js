@@ -39,6 +39,14 @@ export const GOLD_COLORS = {
   trunk: "#8B7355",
 };
 
+// Mythic palette — glowing unicode treatment.
+const MYTHIC_COLORS = {
+  glow: "#b388ff",
+  glowBright: "#e0c3fc",
+  core: "#7c4dff",
+  trunk: "#5e35b1",
+};
+
 const DETAIL_COLORS = {
   mushroom: "#c4a882",
   mushroomCap: "#9e4a3a",
@@ -270,6 +278,12 @@ pPPpPPPp
     sapling: parse(` pP\npBp\n b`, { p: BLOSSOM_COLORS.petalSoft, P: BLOSSOM_COLORS.petalBright, B: BLOSSOM_COLORS.petalDeep, b: BLOSSOM_COLORS.branch }),
     young: parse(`  PB\n PpBp\npBPpBP\n  bb\n  bb`, { p: BLOSSOM_COLORS.petalSoft, P: BLOSSOM_COLORS.petalBright, B: BLOSSOM_COLORS.petalDeep, b: BLOSSOM_COLORS.branch }),
     full: parse(`   PBp\n pBPPBp\nPBpPBPBP\n pBPPBp\n   bb\n   bb`, { p: BLOSSOM_COLORS.petalSoft, P: BLOSSOM_COLORS.petalBright, B: BLOSSOM_COLORS.petalDeep, b: BLOSSOM_COLORS.branch }),
+  },
+  mythic: {
+    seed: parse(`\n m\n t\n`, { m: MYTHIC_COLORS.glow, t: MYTHIC_COLORS.trunk }),
+    sapling: parse(`\n mm\nmGm\n t\n`, { m: MYTHIC_COLORS.glow, G: MYTHIC_COLORS.glowBright, t: MYTHIC_COLORS.trunk }),
+    young: parse(`\n  mG\n mGGm\nmGGcGm\n  tt\n  tt\n`, { m: MYTHIC_COLORS.glow, G: MYTHIC_COLORS.glowBright, c: MYTHIC_COLORS.core, t: MYTHIC_COLORS.trunk }),
+    full: parse(`\n   mGm\n mGGGGm\nmGGccGGm\n mGGGGm\n   tt\n   tt\n`, { m: MYTHIC_COLORS.glow, G: MYTHIC_COLORS.glowBright, c: MYTHIC_COLORS.core, t: MYTHIC_COLORS.trunk }),
   },
 };
 
