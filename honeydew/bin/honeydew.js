@@ -30,16 +30,9 @@ if (command === "init") {
 } else if (command === "badge") {
   const { badge } = await import("../src/badge.js");
   await badge();
-} else if (command === "md") {
-  const { generateForestMd } = await import("../src/markdown.js");
-  await generateForestMd();
 } else if (!command) {
   const { viewer } = await import("../src/viewer2d.js");
   await viewer();
-} else if (command === "view") {
-  const targetDir = process.argv[3] || process.cwd();
-  const { viewer } = await import("../src/viewer3d.js");
-  await viewer(targetDir);
 } else if (command === "login") {
   const { loginWithDevice } = await import("../src/auth.js");
   const success = await loginWithDevice();
@@ -91,6 +84,6 @@ if (command === "init") {
   }
 } else {
   console.error(`Unknown command: ${command}`);
-  console.error("Usage: honeytree [init|login|plant|view <dir>|badge|md|logout|sync|status|rewards]");
+  console.error("Usage: honeytree [init|login|plant|badge|logout|sync|status|rewards]");
   process.exit(1);
 }
