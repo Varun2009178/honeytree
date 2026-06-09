@@ -13,8 +13,8 @@ const input: ReceiptInput = {
   fallbackLocation: "a reforestation project",
   virtualTrees: 137,
   streak: 9,
-  badges: [{ slug: "planter", label: "Planter" }, { slug: "bloomer", label: "Bloomer" }],
-  newBadgeSlugs: ["bloomer"],
+  badges: [{ slug: "cherry", label: "Cherry Blossom" }, { slug: "pine", label: "Pine" }],
+  newBadgeSlugs: ["pine"],
 }
 const model = buildReceiptModel(input)
 
@@ -30,7 +30,7 @@ describe("receipt template", () => {
     expect(t).toContain("Kenya")
     expect(t).toContain("137")
     expect(t).toContain("9")
-    expect(t).toContain("Bloomer")
+    expect(t).toContain("Pine")
     expect(t).toMatch(/[/\\_|]/) // contains ascii art characters
   })
 
@@ -41,8 +41,8 @@ describe("receipt template", () => {
     expect(h).toContain("your 3rd tree")
   })
 
-  it("uses the blossom tree when bloomer is unlocked", () => {
-    const plain = buildReceiptModel({ ...input, badges: [{ slug: "planter", label: "Planter" }], newBadgeSlugs: [] })
+  it("uses the blossom tree when cherry is unlocked", () => {
+    const plain = buildReceiptModel({ ...input, badges: [{ slug: "pine", label: "Pine" }], newBadgeSlugs: [] })
     expect(renderReceiptText(model)).not.toBe(renderReceiptText(plain))
   })
 })

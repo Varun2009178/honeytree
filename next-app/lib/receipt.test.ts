@@ -12,8 +12,8 @@ const base: ReceiptInput = {
   fallbackLocation: "a reforestation project via One Tree Planted",
   virtualTrees: 137,
   streak: 9,
-  badges: [{ slug: "planter", label: "Planter" }],
-  newBadgeSlugs: ["planter"],
+  badges: [{ slug: "cherry", label: "Cherry Blossom" }],
+  newBadgeSlugs: ["cherry"],
 }
 
 describe("ordinal", () => {
@@ -53,13 +53,13 @@ describe("buildReceiptModel", () => {
     expect(buildReceiptModel({ ...base, goodApiLocation: "Kenya" }).location).toBe("Kenya")
   })
 
-  it("flags bloomer and selects new badges", () => {
+  it("flags cherry and selects new badges", () => {
     const m = buildReceiptModel({
       ...base,
-      badges: [{ slug: "planter", label: "Planter" }, { slug: "bloomer", label: "Bloomer" }],
-      newBadgeSlugs: ["bloomer"],
+      badges: [{ slug: "cherry", label: "Cherry Blossom" }, { slug: "pine", label: "Pine" }],
+      newBadgeSlugs: ["pine"],
     })
-    expect(m.hasBloomer).toBe(true)
-    expect(m.newBadges.map((b) => b.slug)).toEqual(["bloomer"])
+    expect(m.hasCherry).toBe(true)
+    expect(m.newBadges.map((b) => b.slug)).toEqual(["pine"])
   })
 })
