@@ -144,7 +144,7 @@ export default function ForestApp() {
         x: typeof s.x === "number" ? s.x : 0,
         growth: shape.growth,
         heightBonus: shape.heightBonus,
-        variant: shape.variant,
+        variant: s.variant ?? null,
         plantedAt: new Date().toISOString(),
       });
     }, 1000);
