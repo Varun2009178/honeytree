@@ -26,9 +26,9 @@ describe("tokensToTree", () => {
     assert.ok(r.heightBonus >= 1 && r.heightBonus <= GROWTH.MAX_HEIGHT_BONUS);
     assert.equal(r.variant, null);
   });
-  it("monster turns become ancient with max height", () => {
+  it("monster turns get max height but no token-driven variant", () => {
     const r = tokensToTree(GROWTH.MONSTER_TOKENS + 500);
-    assert.equal(r.variant, "ancient");
+    assert.equal(r.variant, null);
     assert.equal(r.heightBonus, GROWTH.MAX_HEIGHT_BONUS);
   });
   it("handles bad input safely", () => {

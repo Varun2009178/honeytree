@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import { readForest, createEmptyForest } from "./state.js";
-import { hasCherryBlossom } from "./rewards.js";
-import { TREE_TYPES, TREE_TYPES_WITH_BLOSSOM } from "./sprites.js";
+import { getUnlockedVarietyKeys } from "./rewards.js";
+import { unlockedPool, pickSpecies } from "./varieties.js";
 import { getPlantWidth, findOpenX } from "./plant.js";
 import { writeActiveSession, readActiveSession, clearActiveSession } from "./session.js";
 import { readTurnTokens } from "./transcript.js";
@@ -22,8 +22,9 @@ export function startTurn(payload) {
   if (!transcript_path) return;
 
   const forest = readForest() ?? createEmptyForest();
-  const types = hasCherryBlossom() ? TREE_TYPES_WITH_BLOSSOM : TREE_TYPES;
-  const type = types[Math.floor(Math.random() * types.length)];
+  const species = pickSpecies(unlockedPool(getUnlockedVarietyKeys()));
+  const type = species.type;
+  const variant = species.variant ?? null;
   const width = getPlantWidth(forest);
   const x = findOpenX(forest.trees, type, 1, width);
 
@@ -33,6 +34,7 @@ export function startTurn(payload) {
     turnStartedAt: Date.now(),
     baselineOffset: fileSize(transcript_path),
     type,
+    variant,
     x,
   });
 }
@@ -48,5 +50,5 @@ export function computeTickShape(payload) {
   const tokens = readTurnTokens(transcript_path, session.baselineOffset || 0);
   const shape = tokensToTree(tokens);
   clearActiveSession();
-  return { ...shape, type: session.type, x: session.x, tokens };
+  return { ...shape, type: session.type, variant: session.variant ?? null, x: session.x, tokens };
 }

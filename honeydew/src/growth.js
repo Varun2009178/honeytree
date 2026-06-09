@@ -27,6 +27,6 @@ export function tokensToTree(tokens) {
     heightBonus = Math.min(GROWTH.MAX_HEIGHT_BONUS, Math.max(1, Math.ceil(over * GROWTH.MAX_HEIGHT_BONUS)));
   }
 
-  const variant = n > GROWTH.MONSTER_TOKENS ? "ancient" : null;
-  return { growth: Math.min(1, Math.round(growth * 100) / 100), heightBonus, variant };
+  // Variant (species/look) is owned by the variety system, not token count.
+  return { growth: Math.min(1, Math.round(growth * 100) / 100), heightBonus, variant: null };
 }
