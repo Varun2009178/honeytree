@@ -5,7 +5,8 @@ import path from "node:path";
 import os from "node:os";
 import { execSync } from "node:child_process";
 import { getAuth, isLoggedIn } from "../auth.js";
-import { getRewards, syncRewards } from "../rewards.js";
+import { getRewards, syncRewards, uncelebratedUnlocked, markCelebrated } from "../rewards.js";
+import UnlockCelebration from "./UnlockCelebration.js";
 
 import ForestScene from "./ForestScene.js";
 import StatsBar from "./StatsBar.js";
@@ -54,6 +55,7 @@ export default function ForestApp() {
   const [groundPulse, setGroundPulse] = useState(false);
   const [milestonePrompt, setMilestonePrompt] = useState(null);
   const [rewards, setRewards] = useState(() => getRewards());
+  const [celebrationQueue, setCelebrationQueue] = useState(() => uncelebratedUnlocked());
 
   const [activeTree, setActiveTree] = useState(null);
   const [liveTokens, setLiveTokens] = useState(0);
@@ -70,7 +72,12 @@ export default function ForestApp() {
   // Fetch rewards from server (async, non-blocking)
   useEffect(() => {
     if (isLoggedIn()) {
-      syncRewards().then((r) => { if (r) setRewards(r); }).catch(() => {});
+      syncRewards().then((r) => {
+        if (r) {
+          setRewards(r);
+          setCelebrationQueue(uncelebratedUnlocked());
+        }
+      }).catch(() => {});
     }
   }, []);
 
@@ -267,6 +274,8 @@ export default function ForestApp() {
 
   // Keyboard input
   useInput((input, key) => {
+    if (celebrationQueue.length > 0) return;
+
     if (milestonePrompt) {
       const milestoneFile = path.join(os.homedir(), ".honeydew", "milestone.json");
       if (input === "y") {
@@ -360,6 +369,17 @@ export default function ForestApp() {
   const liveForest = activeTree
     ? { ...forest, trees: [...forest.trees, activeTree] }
     : forest;
+
+  if (celebrationQueue.length > 0) {
+    const current = celebrationQueue[0];
+    return h(UnlockCelebration, {
+      varietyKey: current,
+      onDismiss: () => {
+        markCelebrated(current);
+        setCelebrationQueue((q) => q.slice(1));
+      },
+    });
+  }
 
   return h(Box, { flexDirection: "column" },
     h(ForestScene, {
