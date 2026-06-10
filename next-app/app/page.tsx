@@ -2,13 +2,24 @@
 
 import { useState, useEffect, useRef } from "react"
 import { ForestDisplay, MiniTree } from "@/components/forest-display"
+import { getSupabaseBrowser } from "@/lib/supabase-browser"
+
+// Web sign-in: GitHub OAuth with no device code. The callback redirects the
+// user to their /[username] forest (their dashboard).
+async function enterDashboard() {
+  const supabase = getSupabaseBrowser()
+  await supabase.auth.signInWithOAuth({
+    provider: "github",
+    options: { redirectTo: `${window.location.origin}/api/auth/callback` },
+  })
+}
 
 // ─── Data ────────────────────────────────────────────────
 const CMDS = ["npm install -g honeytree", "honeytree init", "honeytree login", "honeytree"]
 
 const STEPS = [
   { n: "01", title: "Install & init", body: "One global install. honeytree init registers a Stop hook inside Claude Code — no manual steps needed." },
-  { n: "02", title: "Login & link", body: "Run honeytree login in your terminal. Sign in with GitHub on the dashboard and enter the code to link your account." },
+  { n: "02", title: "Login & link", body: "Run honeytree login in your terminal, then authorize with GitHub and paste the code to link your account." },
   { n: "03", title: "Build with Claude", body: "Every time Claude Code completes a response, a new tree is planted automatically in your forest and synced to the cloud." },
   { n: "04", title: "Watch it grow", body: "Run honeytree in a separate terminal. Your forest grows in real time, biome by biome, as you ship." },
   { n: "05", title: "Plant real trees", body: "Every 50 virtual trees unlocks a real tree planting for $1 via Good API. Check your rewards with honeytree rewards." },
@@ -23,11 +34,12 @@ const BIOME_DATA = [
 ]
 
 const SPECIES_DATA = [
-  { key: "oak",    name: "Oak",    desc: "Wide, rounded canopy",       cols: 14 },
-  { key: "pine",   name: "Pine",   desc: "Tall, triangular shape",     cols: 12 },
-  { key: "birch",  name: "Birch",  desc: "Light trunk, bright leaves", cols: 13 },
-  { key: "willow", name: "Willow", desc: "Drooping, wide canopy",      cols: 15 },
-  { key: "cherry", name: "Cherry", desc: "Pink blossoms",              cols: 12 },
+  { key: "standard", sprite: "birch",   name: "Standard", desc: "Default — always growing", cols: 13 },
+  { key: "cherry",   sprite: "cherry",  name: "Cherry",   desc: "Unlocks at 1 real tree",   cols: 12 },
+  { key: "pine",     sprite: "pine",    name: "Pine",     desc: "Unlocks at 5 real trees",  cols: 12 },
+  { key: "oak",      sprite: "oak",     name: "Oak",      desc: "Unlocks at 10 real trees", cols: 14 },
+  { key: "ancient",  sprite: "ancient", name: "Ancient",  desc: "Unlocks at 25 real trees", cols: 15 },
+  { key: "mythic",   sprite: "mythic",  name: "Mythic",   desc: "Unlocks at 50 real trees", cols: 13 },
 ]
 
 // ─── Icons ───────────────────────────────────────────────
@@ -45,12 +57,12 @@ function Nav() {
     <header className="topbar">
       <a href="#" className="brand">Honeytree</a>
       <nav className="nav-links">
-        <a href="/dashboard" className="nav-npm">Dashboard</a>
         <a href="https://www.npmjs.com/package/honeytree" target="_blank" rel="noopener noreferrer" className="nav-link">npm</a>
         <a href="mailto:varun@teyra.app" className="nav-link">Contact</a>
         <a href="https://github.com/Varun2009178/honeytree" target="_blank" rel="noopener noreferrer" className="nav-link nav-icon" aria-label="GitHub">
           <GitHubIcon />
         </a>
+        <button onClick={enterDashboard} className="nav-npm">Enter dashboard</button>
       </nav>
     </header>
   )
@@ -117,7 +129,14 @@ function TerminalDemo() {
 }
 
 // ─── Install ─────────────────────────────────────────────
-function Install() {
+const CMD_NOTES = [
+  "Install the CLI globally",
+  "Register the Claude Code hook",
+  "Get a sign-in link in your terminal",
+  "Watch your forest grow",
+]
+
+function QuickStart() {
   const [copied, setCopied] = useState<number | null>(null)
   function copy(cmd: string, i: number) {
     navigator.clipboard.writeText(cmd).catch(() => {})
@@ -125,20 +144,30 @@ function Install() {
     setTimeout(() => setCopied(c => c === i ? null : c), 1400)
   }
   return (
-    <div className="install">
-      <p className="kicker">Quick start</p>
-      <ol className="cmd-list">
+    <section id="start" className="quickstart">
+      <p className="kicker centered">Quick start</p>
+      <h2 className="quickstart-title">Get started in four commands</h2>
+      <p className="quickstart-sub">
+        Honeytree lives in your terminal. <code>honeytree login</code> prints a link &mdash;
+        open it, sign in with GitHub, and you land on your forest.
+      </p>
+      <ol className="qs-list">
         {CMDS.map((cmd, i) => (
-          <li key={cmd} className="cmd-item">
-            <span className="cmd-num">{i + 1}</span>
-            <code className="cmd-code">{cmd}</code>
-            <button className="cmd-btn" onClick={() => copy(cmd, i)}>
-              {copied === i ? "\u2713" : "Copy"}
+          <li key={cmd} className="qs-item">
+            <span className="qs-num">{i + 1}</span>
+            <div className="qs-cmd">
+              <code className="qs-code">
+                <span className="qs-prompt">$</span> {cmd}
+              </code>
+              <span className="qs-note">{CMD_NOTES[i]}</span>
+            </div>
+            <button className="qs-btn" onClick={() => copy(cmd, i)}>
+              {copied === i ? "Copied" : "Copy"}
             </button>
           </li>
         ))}
       </ol>
-    </div>
+    </section>
   )
 }
 
@@ -188,12 +217,12 @@ function Biomes() {
 function Species() {
   return (
     <section className="species">
-      <p className="kicker centered">Five species</p>
+      <p className="kicker centered">Six varieties</p>
       <div className="species-grid">
         {SPECIES_DATA.map(sp => (
           <div key={sp.key} className="sp-card">
             <div className="sp-preview">
-              <MiniTree type={sp.key} cols={sp.cols} />
+              <MiniTree type={sp.sprite} cols={sp.cols} />
             </div>
             <div className="sp-info">
               <span className="sp-name">{sp.name}</span>
@@ -214,10 +243,10 @@ function RealTrees() {
         <p className="kicker centered">From pixels to soil</p>
         <h2>Plant a <span style={{ color: "var(--green)" }}>real</span> tree</h2>
         <p className="real-trees-body">
-          Every 50 virtual trees unlocks a real tree planting for $1 through Good API. Sign in with GitHub, sync your forest, and turn code into canopy.
+          Every 50 virtual trees unlocks a real tree planting for $1 through Good API. Run honeytree plant in your terminal and turn code into canopy — each real tree unlocks a new variety.
         </p>
-        <a href="/dashboard" className="real-trees-cta">
-          Open Dashboard
+        <a href="https://www.npmjs.com/package/honeytree" target="_blank" rel="noopener noreferrer" className="real-trees-cta">
+          Get the CLI
         </a>
         <p className="real-trees-note">
           Free &amp; open source. Auth and payments are entirely opt-in.
@@ -255,17 +284,15 @@ export default function Home() {
 
         <section className="hero">
           <h1>Grow a <span className="hero-forest">forest</span><br />with Claude Code.</h1>
-          <p className="hero-sub">Honeytree plants a pixel-art tree in your terminal after every Claude Code prompt. Watch a forest emerge as you build &mdash; then plant real ones.</p>
+          <p className="hero-sub">Every Claude Code prompt plants a tree in your terminal. Reach milestones to plant real ones.</p>
           <div className="hero-actions">
-            <a href="/dashboard" className="hero-btn-primary">Open Dashboard</a>
+            <a href="#start" className="hero-btn-primary">Get started</a>
             <a href="https://github.com/Varun2009178/honeytree" target="_blank" rel="noopener noreferrer" className="hero-btn-secondary">View on GitHub</a>
           </div>
         </section>
 
-        <div className="mid-grid">
-          <Install />
-          <HowItWorks />
-        </div>
+        <QuickStart />
+        <HowItWorks />
 
         <Biomes />
         <Species />

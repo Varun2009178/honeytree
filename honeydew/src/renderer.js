@@ -1,6 +1,6 @@
 import chalk from "chalk";
 
-import { getSprite, getAncientSprite, getGroundDetail, TREE_TYPES, GROUND_DETAIL_TYPES, TEAL_COLORS } from "./sprites.js";
+import { getSprite, getAncientSprite, getGroundDetail, TREE_TYPES, GROUND_DETAIL_TYPES } from "./sprites.js";
 import { getVirtualWidth } from "./plant.js";
 
 const SKY_ROWS = 4;
@@ -363,7 +363,7 @@ export function renderFrame(forest, termWidth = 80, options = {}) {
   const spriteOverride = options.spriteOverride ?? null;
   const rewards = options.rewards ?? null;
   const hasAncient = rewards && rewards.ancient;
-  const hasBloomer = rewards && rewards.bloomer;
+  const hasBloomer = rewards && rewards.cherry;
 
   for (const tree of forest.trees) {
     const yOffset = getTreeYOffset(tree.id);
@@ -371,10 +371,16 @@ export function renderFrame(forest, termWidth = 80, options = {}) {
     if (spriteOverride && spriteOverride.treeId === tree.id) {
       sprite = spriteOverride.sprite;
     } else if (hasAncient && hash(tree.id * 37) % 8 === 0) {
-      // Ancient: 1 in 8 trees become tall golden trees
-      sprite = getAncientSprite(tree.growth);
+      // Ancient: 1 in 8 trees become tall golden trees (still honor heightBonus)
+      sprite = getSprite(tree.type, tree.growth, {
+        heightBonus: tree.heightBonus || 0,
+        variant: "ancient",
+      });
     } else {
-      sprite = getSprite(tree.type, tree.growth);
+      sprite = getSprite(tree.type, tree.growth, {
+        heightBonus: tree.heightBonus || 0,
+        variant: tree.variant || null,
+      });
     }
     const canopyShiftX = getWindOffset(tree.id, windTick);
     compositeSprite(buffer, sprite, tree.x, treeBaseY - yOffset, canopyShiftX);
@@ -427,44 +433,10 @@ export function renderFrame(forest, termWidth = 80, options = {}) {
     }
   }
 
-  // Reward: Grove — teal ground and trunks
-  if (rewards && rewards.grove) {
-    // Teal ground
-    for (let rowIndex = 0; rowIndex < GROUND_ROWS; rowIndex++) {
-      for (let x = 0; x < virtualWidth; x++) {
-        buffer[groundStart + rowIndex][x].color = "#4ECDC4";
-        buffer[groundStart + rowIndex][x].char = "═";
-      }
-    }
-    // Teal trunks (bottom 2 rows of tree area)
-    for (let y = groundStart - 2; y < groundStart; y++) {
-      for (let x = 0; x < virtualWidth; x++) {
-        const cell = buffer[y][x];
-        if (cell.char === "█" && cell.color) {
-          const c = parseHex(cell.color);
-          // Detect trunk colors (brownish hues)
-          if (c.r > c.g && c.r > c.b) {
-            cell.color = TEAL_COLORS.trunkMid;
-          }
-        }
-      }
-    }
-  }
-
   applyFog(buffer, wilt, virtualWidth);
-
-  // Reward: Legend — username floats above forest
-  const legendLine = (rewards && rewards.legend && rewards.username)
-    ? rewards.username
-    : null;
 
   // Slice the viewport from the virtual buffer
   const lines = [];
-
-  if (legendLine) {
-    const pad = Math.max(0, Math.floor((width - legendLine.length) / 2));
-    lines.push(" ".repeat(pad) + chalk.hex("#FFD700")(legendLine));
-  }
 
   for (let y = 0; y < SCENE_HEIGHT - SPACER_ROWS - STATS_ROWS - CTA_ROWS; y += 1) {
     let line = "";
@@ -518,7 +490,12 @@ export function buildScene(forest, width) {
   const treeBaseY = groundStart - 1;
   for (const tree of forest.trees) {
     const yOffset = getTreeYOffset(tree.id);
-    compositeSprite(buffer, getSprite(tree.type, tree.growth), tree.x, treeBaseY - yOffset);
+    compositeSprite(
+      buffer,
+      getSprite(tree.type, tree.growth, { heightBonus: tree.heightBonus || 0, variant: tree.variant || null }),
+      tree.x,
+      treeBaseY - yOffset,
+    );
   }
 
   renderGroundDetails(buffer, biome, w, groundStart);
@@ -557,7 +534,12 @@ export function renderPlainText(forest, width = 60) {
   const treeBaseY = groundStart - 1;
   for (const tree of forest.trees) {
     const yOffset = getTreeYOffset(tree.id);
-    compositeSprite(buffer, getSprite(tree.type, tree.growth), tree.x, treeBaseY - yOffset);
+    compositeSprite(
+      buffer,
+      getSprite(tree.type, tree.growth, { heightBonus: tree.heightBonus || 0, variant: tree.variant || null }),
+      tree.x,
+      treeBaseY - yOffset,
+    );
   }
 
   const lines = [];

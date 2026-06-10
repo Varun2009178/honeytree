@@ -24,7 +24,7 @@ export interface ReceiptModel {
   streak: number
   badges: { slug: string; label: string }[]
   newBadges: { slug: string; label: string }[]
-  hasBloomer: boolean
+  hasCherry: boolean
 }
 
 export function ordinal(n: number): string {
@@ -53,7 +53,7 @@ export function buildReceiptModel(input: ReceiptInput): ReceiptModel {
   const location = input.goodApiLocation ?? input.fallbackLocation
 
   const newBadges = input.badges.filter((b) => input.newBadgeSlugs.includes(b.slug))
-  const hasBloomer = input.badges.some((b) => b.slug === "bloomer")
+  const hasCherry = input.badges.some((b) => b.slug === "cherry")
 
   return {
     quantity: qty,
@@ -66,6 +66,6 @@ export function buildReceiptModel(input: ReceiptInput): ReceiptModel {
     streak: input.streak,
     badges: input.badges,
     newBadges,
-    hasBloomer,
+    hasCherry,
   }
 }

@@ -1,5 +1,4 @@
 export const TREE_TYPES = ["oak", "pine", "birch", "willow", "cherry"];
-export const TREE_TYPES_WITH_BLOSSOM = ["oak", "pine", "birch", "willow", "cherry", "cherry_blossom"];
 
 const COLORS = {
   canopyDark: "#3f7132",
@@ -23,20 +22,20 @@ const BLOSSOM_COLORS = {
 };
 
 // Teal palette for "Grove" status unlock
-export const TEAL_COLORS = {
-  canopyDark: "#1a7a6a",
-  canopyMid: "#2eb8a0",
-  canopyLight: "#5de0c8",
-  trunkDark: "#4a6b5f",
-  trunkMid: "#6a8b7f",
-};
-
 // Gold palette for "Ancient Forest" tall trees
 export const GOLD_COLORS = {
   canopyTop: "#FFD700",
   canopyMid: "#DAA520",
   canopyDark: "#B8860B",
   trunk: "#8B7355",
+};
+
+// Mythic palette — glowing unicode treatment.
+const MYTHIC_COLORS = {
+  glow: "#b388ff",
+  glowBright: "#e0c3fc",
+  core: "#7c4dff",
+  trunk: "#5e35b1",
 };
 
 const DETAIL_COLORS = {
@@ -271,6 +270,12 @@ pPPpPPPp
     young: parse(`  PB\n PpBp\npBPpBP\n  bb\n  bb`, { p: BLOSSOM_COLORS.petalSoft, P: BLOSSOM_COLORS.petalBright, B: BLOSSOM_COLORS.petalDeep, b: BLOSSOM_COLORS.branch }),
     full: parse(`   PBp\n pBPPBp\nPBpPBPBP\n pBPPBp\n   bb\n   bb`, { p: BLOSSOM_COLORS.petalSoft, P: BLOSSOM_COLORS.petalBright, B: BLOSSOM_COLORS.petalDeep, b: BLOSSOM_COLORS.branch }),
   },
+  mythic: {
+    seed: parse(`\n m\n t\n`, { m: MYTHIC_COLORS.glow, t: MYTHIC_COLORS.trunk }),
+    sapling: parse(`\n mm\nmGm\n t\n`, { m: MYTHIC_COLORS.glow, G: MYTHIC_COLORS.glowBright, t: MYTHIC_COLORS.trunk }),
+    young: parse(`\n  mG\n mGGm\nmGGcGm\n  tt\n  tt\n`, { m: MYTHIC_COLORS.glow, G: MYTHIC_COLORS.glowBright, c: MYTHIC_COLORS.core, t: MYTHIC_COLORS.trunk }),
+    full: parse(`\n   mGm\n mGGGGm\nmGGccGGm\n mGGGGm\n   tt\n   tt\n`, { m: MYTHIC_COLORS.glow, G: MYTHIC_COLORS.glowBright, c: MYTHIC_COLORS.core, t: MYTHIC_COLORS.trunk }),
+  },
 };
 
 // Tall golden tree for "Ancient Forest" reward (1 in 8 trees)
@@ -336,11 +341,28 @@ function getGrowthStage(growth) {
   return "full";
 }
 
-export function getSprite(type, growth) {
-  const spriteSet = SPRITES[type];
-  if (!spriteSet) {
-    throw new Error(`Unknown tree type: ${type}`);
+// rows are stored bottom-first (row[0] is the ground row). Adding trunk rows at
+// the bottom makes the trunk taller and pushes the canopy up.
+function addTrunkRows(sprite, n) {
+  const bottom = sprite.rows[0] || [];
+  const trunkRow = bottom.map((cell) => (cell && cell[1] ? ["█", cell[1]] : [" ", null]));
+  const extra = Array.from({ length: n }, () => trunkRow.map((c) => [c[0], c[1]]));
+  return { rows: [...extra, ...sprite.rows], width: sprite.width };
+}
+
+export function getSprite(type, growth, opts = {}) {
+  const { heightBonus = 0, variant = null } = opts;
+  let sprite;
+  if (variant === "ancient") {
+    sprite = getAncientSprite(growth);
+  } else {
+    const spriteSet = SPRITES[type];
+    if (!spriteSet) {
+      throw new Error(`Unknown tree type: ${type}`);
+    }
+    sprite = spriteSet[getGrowthStage(growth)];
   }
-  return spriteSet[getGrowthStage(growth)];
+  if (heightBonus > 0) sprite = addTrunkRows(sprite, heightBonus);
+  return sprite;
 }
 

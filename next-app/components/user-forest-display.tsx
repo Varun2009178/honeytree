@@ -19,6 +19,10 @@ const C = {
   petalBright: "#ffa6c9",
   petalDeep: "#e87aab",
   branch: "#a67c5b",
+  mythicGlow: "#b388ff",
+  mythicBright: "#e0c3fc",
+  mythicCore: "#7c4dff",
+  mythicTrunk: "#5e35b1",
 }
 
 type Cell = { ch: string; col: string | null }
@@ -90,6 +94,12 @@ const SPRITES: Record<string, Record<string, Sprite>> = {
     sapling: parseSprite(` pP\npBp\n b`, { p: C.petalSoft, P: C.petalBright, B: C.petalDeep, b: C.branch }),
     young: parseSprite(`  PB\n PpBp\npBPpBP\n  bb\n  bb`, { p: C.petalSoft, P: C.petalBright, B: C.petalDeep, b: C.branch }),
     full: parseSprite(`   PBp\n pBPPBp\nPBpPBPBP\n pBPPBp\n   bb\n   bb`, { p: C.petalSoft, P: C.petalBright, B: C.petalDeep, b: C.branch }),
+  },
+  mythic: {
+    seed: parseSprite(` m\n t`, { m: C.mythicGlow, t: C.mythicTrunk }),
+    sapling: parseSprite(` mm\nmGm\n t`, { m: C.mythicGlow, G: C.mythicBright, t: C.mythicTrunk }),
+    young: parseSprite(`  mG\n mGGm\nmGGcGm\n  tt\n  tt`, { m: C.mythicGlow, G: C.mythicBright, c: C.mythicCore, t: C.mythicTrunk }),
+    full: parseSprite(`   mGm\n mGGGGm\nmGGccGGm\n mGGGGm\n   tt\n   tt`, { m: C.mythicGlow, G: C.mythicBright, c: C.mythicCore, t: C.mythicTrunk }),
   },
 }
 

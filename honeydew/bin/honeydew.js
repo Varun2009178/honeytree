@@ -5,26 +5,34 @@ const command = process.argv[2];
 if (command === "init") {
   const { init } = await import("../src/init.js");
   await init();
+} else if (command === "__session") {
+  // Hidden: UserPromptSubmit hook — marks the start of a turn (token baseline + chosen tree).
+  try {
+    const { readStdin } = await import("../src/stdin.js");
+    const { startTurn } = await import("../src/turn.js");
+    const payload = JSON.parse((await readStdin()) || "{}");
+    startTurn(payload);
+  } catch {}
 } else if (command === "__tick") {
-  // Hidden: invoked by the Claude Code Stop hook to grow the forest each prompt.
+  // Hidden: Stop hook — finalizes this turn's token-sized tree (random fallback).
   const { tick } = await import("../src/plant.js");
-  await tick();
+  let shape = null;
+  try {
+    const { readStdin } = await import("../src/stdin.js");
+    const { computeTickShape } = await import("../src/turn.js");
+    const payload = JSON.parse((await readStdin()) || "{}");
+    shape = computeTickShape(payload);
+  } catch {}
+  await tick(shape);
 } else if (command === "plant") {
   const { plant } = await import("../src/plant-real.js");
   await plant();
 } else if (command === "badge") {
   const { badge } = await import("../src/badge.js");
   await badge();
-} else if (command === "md") {
-  const { generateForestMd } = await import("../src/markdown.js");
-  await generateForestMd();
 } else if (!command) {
   const { viewer } = await import("../src/viewer2d.js");
   await viewer();
-} else if (command === "view") {
-  const targetDir = process.argv[3] || process.cwd();
-  const { viewer } = await import("../src/viewer3d.js");
-  await viewer(targetDir);
 } else if (command === "login") {
   const { loginWithDevice } = await import("../src/auth.js");
   const success = await loginWithDevice();
@@ -51,8 +59,7 @@ if (command === "init") {
   const rewards = await syncRewards();
   if (rewards && rewards.badges.length > 0) {
     console.log(`  Badges: ${rewards.badges.map(b => b.label).join(", ")}`);
-    if (rewards.cherry_blossom) console.log("  Cherry blossom trees unlocked!");
-    if (rewards.grove) console.log("  Grove status unlocked — teal palette active!");
+    if (rewards.cherry) console.log("  Cherry blossom trees unlocked!");
   }
   console.log("  Done.");
 } else if (command === "rewards") {
@@ -76,6 +83,6 @@ if (command === "init") {
   }
 } else {
   console.error(`Unknown command: ${command}`);
-  console.error("Usage: honeytree [init|login|plant|view <dir>|badge|md|logout|sync|status|rewards]");
+  console.error("Usage: honeytree [init|login|plant|badge|logout|sync|status|rewards]");
   process.exit(1);
 }

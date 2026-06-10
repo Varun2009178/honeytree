@@ -13,8 +13,8 @@ const input: ReceiptInput = {
   fallbackLocation: "a reforestation project",
   virtualTrees: 50,
   streak: 1,
-  badges: [{ slug: "planter", label: "Planter" }],
-  newBadgeSlugs: ["planter"],
+  badges: [{ slug: "cherry", label: "Cherry Blossom" }],
+  newBadgeSlugs: ["cherry"],
 }
 
 describe("sendReceiptEmail", () => {

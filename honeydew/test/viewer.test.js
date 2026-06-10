@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, it } from "node:test";
 
-import { createForestWatcher } from "../src/viewer.js";
+import { createForestWatcher } from "../src/viewer2d.js";
 
 describe("createForestWatcher", () => {
   let tmpDir;

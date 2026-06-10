@@ -15,6 +15,14 @@ const C = {
   birchTrunk:   '#d9d6d2',
   cherryPink:   '#de93b8',
   cherryBloom:  '#f0b7cf',
+  goldTop:      '#FFD700',
+  goldMid:      '#DAA520',
+  goldDark:     '#B8860B',
+  goldTrunk:    '#8B7355',
+  mythicGlow:   '#b388ff',
+  mythicBright: '#e0c3fc',
+  mythicCore:   '#7c4dff',
+  mythicTrunk:  '#5e35b1',
 }
 
 type Cell = { ch: string; col: string | null }
@@ -83,6 +91,18 @@ const SPRITES: Record<string, Record<string, Sprite>> = {
     sapling: parseSprite(` pp\npPp\n t`,                                  { p: C.cherryBloom, P: C.cherryPink, t: C.trunkLight }),
     young:   parseSprite(`  pP\n pPPp\npPPpPP\n  tt\n  tt`,              { p: C.cherryBloom, P: C.cherryPink, t: C.trunkLight }),
     full:    parseSprite(`   pPp\n pPPPPp\npPPpPPPp\n pPPPpp\n   tt\n   tt`, { p: C.cherryBloom, P: C.cherryPink, t: C.trunkLight }),
+  },
+  ancient: {
+    seed:    parseSprite(` g\n t`,                                        { g: C.goldTop, t: C.goldTrunk }),
+    sapling: parseSprite(` gg\ngGg\n t`,                                  { g: C.goldTop, G: C.goldMid, t: C.goldTrunk }),
+    young:   parseSprite(`  Tg\n TGGg\nTgGGgT\n  tt\n  tt\n  tt`,         { g: C.goldMid, G: C.goldDark, T: C.goldTop, t: C.goldTrunk }),
+    full:    parseSprite(`   TT\n  TGGT\n TgGGGgT\nTgGGGGgT\n TgGGGg\n   tt\n   tt\n   tt`, { g: C.goldMid, G: C.goldDark, T: C.goldTop, t: C.goldTrunk }),
+  },
+  mythic: {
+    seed:    parseSprite(` m\n t`,                                        { m: C.mythicGlow, t: C.mythicTrunk }),
+    sapling: parseSprite(` mm\nmGm\n t`,                                  { m: C.mythicGlow, G: C.mythicBright, t: C.mythicTrunk }),
+    young:   parseSprite(`  mG\n mGGm\nmGGcGm\n  tt\n  tt`,               { m: C.mythicGlow, G: C.mythicBright, c: C.mythicCore, t: C.mythicTrunk }),
+    full:    parseSprite(`   mGm\n mGGGGm\nmGGccGGm\n mGGGGm\n   tt\n   tt`, { m: C.mythicGlow, G: C.mythicBright, c: C.mythicCore, t: C.mythicTrunk }),
   },
 }
 

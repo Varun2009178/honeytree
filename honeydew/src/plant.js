@@ -1,5 +1,6 @@
-import { getSprite, TREE_TYPES, TREE_TYPES_WITH_BLOSSOM } from "./sprites.js";
-import { hasCherryBlossom } from "./rewards.js";
+import { getSprite } from "./sprites.js";
+import { getUnlockedVarietyKeys } from "./rewards.js";
+import { unlockedPool, pickSpecies } from "./varieties.js";
 import { createEmptyForest, readForest, writeForest } from "./state.js";
 import { findBadgeFile, writeBadgeSVG } from "./badge.js";
 import { migrateLayout } from "./migrate.js";
@@ -17,16 +18,12 @@ export function getVirtualWidth(treeCount, termWidth) {
   return Math.max(termWidth, treeCount * TREE_SPACING);
 }
 
-function getPlantWidth(forest) {
+export function getPlantWidth(forest) {
   const termWidth = forest.viewerWidth && forest.viewerWidth > 40
     ? forest.viewerWidth
     : DEFAULT_WIDTH;
   const treeCount = forest.trees.length + 1;
   return getVirtualWidth(treeCount, termWidth);
-}
-
-function randomItem(items) {
-  return items[Math.floor(Math.random() * items.length)];
 }
 
 function randomGrowth() {
@@ -41,7 +38,7 @@ function occupiedRanges(trees) {
   });
 }
 
-function findOpenX(trees, type, growth, width) {
+export function findOpenX(trees, type, growth, width) {
   const sprite = getSprite(type, growth);
   const half = Math.floor(sprite.width / 2);
   const margin = half + 1;
@@ -74,7 +71,7 @@ function daysBetween(dateA, dateB) {
   return Math.round(Math.abs(b - a) / (24 * 60 * 60 * 1000));
 }
 
-export async function tick() {
+export async function tick(shape = null) {
   const forest = readForest() ?? createEmptyForest();
   const width = getPlantWidth(forest);
 
@@ -107,18 +104,21 @@ export async function tick() {
     tree.growth = nudgeGrowth(tree.growth);
   }
 
-  const availableTypes = hasCherryBlossom() ? TREE_TYPES_WITH_BLOSSOM : TREE_TYPES;
-  const type = randomItem(availableTypes);
-  const growth = randomGrowth();
+  let type = shape?.type;
+  let variant = shape?.variant ?? null;
+  if (!type) {
+    const species = pickSpecies(unlockedPool(getUnlockedVarietyKeys()));
+    type = species.type;
+    variant = species.variant ?? null;
+  }
+  const growth = typeof shape?.growth === "number" ? shape.growth : randomGrowth();
   const nextId = forest.trees.reduce((max, tree) => Math.max(max, tree.id), 0) + 1;
+  const x = typeof shape?.x === "number" ? shape.x : findOpenX(forest.trees, type, growth, width);
 
-  forest.trees.push({
-    id: nextId,
-    type,
-    growth,
-    x: findOpenX(forest.trees, type, growth, width),
-    plantedAt: new Date().toISOString(),
-  });
+  const tree = { id: nextId, type, growth, x, plantedAt: new Date().toISOString() };
+  if (shape?.heightBonus) tree.heightBonus = shape.heightBonus;
+  if (variant) tree.variant = variant;
+  forest.trees.push(tree);
   forest.totalPrompts += 1;
 
   writeForest(forest);
