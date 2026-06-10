@@ -118,6 +118,26 @@ pre{font-family:var(--mono)}
   transition:border-color 160ms,transform 120ms;
 }
 .hero-btn-secondary:hover{border-color:var(--tx3);transform:translateY(-1px)}
+.hero-btn-dashboard{
+  padding:13px 28px;
+  border-radius:10px;
+  background:var(--bg-up);color:var(--tx1);
+  border:1px solid var(--tx1);
+  font-size:.92rem;font-weight:600;
+  font-family:var(--font);cursor:pointer;
+  transition:background 160ms,color 160ms,transform 120ms;
+}
+.hero-btn-dashboard:hover{background:var(--tx1);color:var(--btnx);transform:translateY(-1px)}
+.hero-alt{
+  margin-top:16px;
+  font-size:.85rem;color:var(--tx3);
+}
+.hero-link-btn{
+  background:none;border:0;padding:0;cursor:pointer;
+  font:inherit;color:var(--green);font-weight:600;
+}
+.hero-link-btn:hover{text-decoration:underline}
+.hero-alt a:hover{color:var(--tx1)}
 
 /* ── kicker ─────────────────────────────────────────────── */
 .kicker{
@@ -468,7 +488,7 @@ pre{font-family:var(--mono)}
   animation: up 420ms ease both;
 }
 .device-card{
-  max-width:400px;width:100%;
+  max-width:440px;width:100%;
   text-align:center;
 }
 .device-title{
@@ -509,6 +529,41 @@ pre{font-family:var(--mono)}
 }
 .device-btn:hover{opacity:.85}
 .device-btn:disabled{opacity:.5;cursor:wait}
+.device-input-sm{font-size:1rem;letter-spacing:.18em}
+
+/* device page: terminal setup instructions */
+.device-steps{
+  margin-top:28px;padding-top:24px;
+  border-top:1px solid var(--border-s);
+  text-align:left;
+}
+.device-steps-label{
+  font-size:.82rem;font-weight:600;color:var(--tx2);
+  margin-bottom:12px;
+}
+.device-steps-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.device-step{display:flex;align-items:center;gap:10px}
+.device-step-num{
+  flex-shrink:0;width:20px;height:20px;border-radius:50%;
+  background:var(--green-l);color:var(--green);
+  font-size:.68rem;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+}
+.device-step-cmd{
+  flex:1;padding:9px 12px;
+  background:var(--term);border-radius:8px;
+  font-family:var(--mono);font-size:.82rem;
+  color:rgba(255,255,255,.9);
+  overflow-x:auto;white-space:nowrap;scrollbar-width:none;
+}
+.device-step-cmd::-webkit-scrollbar{display:none}
+.device-step-prompt{color:#5b9a4a;margin-right:6px;user-select:none}
+.device-steps-note{
+  margin-top:14px;font-size:.8rem;line-height:1.55;color:var(--tx3);
+}
+.device-steps-note code{
+  font-family:var(--mono);font-size:.92em;color:var(--tx2);
+}
 
 /* ── delete account ─────────────────────────────────────── */
 .delete-list{

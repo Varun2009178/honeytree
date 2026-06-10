@@ -1,13 +1,14 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import crypto from "crypto"
 import { setDeviceCode, cleanExpired } from "@/lib/device-codes"
+import { getBaseUrl } from "@/lib/base-url"
 
 function generateUserCode(): string {
   // 6-digit numeric code, easy to read off a terminal and type.
   return crypto.randomInt(0, 1_000_000).toString().padStart(6, "0")
 }
 
-export async function POST() {
+export async function POST(req: NextRequest) {
   cleanExpired()
 
   const deviceCode = crypto.randomUUID()
@@ -19,7 +20,7 @@ export async function POST() {
     status: "pending",
   })
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+  const appUrl = getBaseUrl(req)
 
   return NextResponse.json({
     device_code: deviceCode,

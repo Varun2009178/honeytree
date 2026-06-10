@@ -2,17 +2,6 @@
 
 import { useState, useEffect, useRef } from "react"
 import { ForestDisplay, MiniTree } from "@/components/forest-display"
-import { getSupabaseBrowser } from "@/lib/supabase-browser"
-
-// Web sign-in: GitHub OAuth with no device code. The callback redirects the
-// user to their /[username] forest (their dashboard).
-async function enterDashboard() {
-  const supabase = getSupabaseBrowser()
-  await supabase.auth.signInWithOAuth({
-    provider: "github",
-    options: { redirectTo: `${window.location.origin}/api/auth/callback` },
-  })
-}
 
 // ─── Data ────────────────────────────────────────────────
 const CMDS = ["npm install -g honeytree", "honeytree init", "honeytree login", "honeytree"]
@@ -62,7 +51,7 @@ function Nav() {
         <a href="https://github.com/Varun2009178/honeytree" target="_blank" rel="noopener noreferrer" className="nav-link nav-icon" aria-label="GitHub">
           <GitHubIcon />
         </a>
-        <button onClick={enterDashboard} className="nav-npm">Enter dashboard</button>
+        <a href="/auth/device" className="nav-npm">Enter dashboard</a>
       </nav>
     </header>
   )
@@ -287,8 +276,11 @@ export default function Home() {
           <p className="hero-sub">Every Claude Code prompt plants a tree in your terminal. Reach milestones to plant real ones.</p>
           <div className="hero-actions">
             <a href="#start" className="hero-btn-primary">Get started</a>
-            <a href="https://github.com/Varun2009178/honeytree" target="_blank" rel="noopener noreferrer" className="hero-btn-secondary">View on GitHub</a>
+            <a href="/auth/device" className="hero-btn-dashboard">Open dashboard →</a>
           </div>
+          <p className="hero-alt">
+            Already set up? <a href="/auth/device" className="hero-link-btn">Open your forest</a> · <a href="https://github.com/Varun2009178/honeytree" target="_blank" rel="noopener noreferrer">GitHub</a>
+          </p>
         </section>
 
         <QuickStart />
