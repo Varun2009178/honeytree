@@ -13,7 +13,7 @@
 ## Quick start
 
 ```bash
-npm install -g honeytree
+npm install -g honeytree@latest
 honeytree init
 honeytree login
 honeytree

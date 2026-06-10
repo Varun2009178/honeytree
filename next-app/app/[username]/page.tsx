@@ -119,7 +119,7 @@ export default async function ProfilePage({
 }
 
 const ONBOARDING_CMDS = [
-  { cmd: "npm install -g honeytree", note: "Install the CLI" },
+  { cmd: "npm install -g honeytree@latest", note: "Install the CLI" },
   { cmd: "honeytree init", note: "Register the Claude Code hook" },
   { cmd: "honeytree login", note: "Link this account" },
   { cmd: "honeytree", note: "Watch your forest grow" },
