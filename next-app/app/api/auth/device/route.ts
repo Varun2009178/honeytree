@@ -9,12 +9,12 @@ function generateUserCode(): string {
 }
 
 export async function POST(req: NextRequest) {
-  cleanExpired()
+  await cleanExpired()
 
   const deviceCode = crypto.randomUUID()
   const userCode = generateUserCode()
 
-  setDeviceCode(deviceCode, {
+  await setDeviceCode(deviceCode, {
     userCode,
     expiresAt: Date.now() + 15 * 60 * 1000,
     status: "pending",

@@ -8,19 +8,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "device_code required" }, { status: 400 })
   }
 
-  const entry = getDeviceCode(device_code)
+  const entry = await getDeviceCode(device_code)
 
   if (!entry) {
     return NextResponse.json({ error: "invalid or expired device_code" }, { status: 404 })
   }
 
   if (entry.expiresAt < Date.now()) {
-    deleteDeviceCode(device_code)
+    await deleteDeviceCode(device_code)
     return NextResponse.json({ error: "device_code expired" }, { status: 410 })
   }
 
   if (entry.status === "complete") {
-    deleteDeviceCode(device_code)
+    await deleteDeviceCode(device_code)
     return NextResponse.json({
       status: "complete",
       access_token: entry.accessToken,

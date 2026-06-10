@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
-import { findByUserCode } from "@/lib/device-codes"
+import { completeByUserCode } from "@/lib/device-codes"
 
 export async function POST(req: NextRequest) {
   const { user_code } = await req.json()
@@ -26,22 +26,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 })
   }
 
-  // Find the device code entry by the user_code the CLI displayed
-  const entry = findByUserCode(user_code.trim().toUpperCase())
-  if (!entry) {
+  // Mark the entry for this user_code complete with the web user's credentials
+  const username =
+    data.user.user_metadata?.user_name || data.user.email || ""
+  const result = await completeByUserCode(user_code.trim(), {
+    accessToken: token,
+    userId: data.user.id,
+    username,
+  })
+
+  if (result === "not_found") {
     return NextResponse.json({ error: "Invalid or expired code" }, { status: 404 })
   }
-
-  if (entry.expiresAt < Date.now()) {
+  if (result === "expired") {
     return NextResponse.json({ error: "Code expired" }, { status: 410 })
   }
 
-  // Mark it complete with the web user's credentials
-  entry.status = "complete"
-  entry.accessToken = token
-  entry.userId = data.user.id
-  entry.username =
-    data.user.user_metadata?.user_name || data.user.email || ""
-
-  return NextResponse.json({ linked: true, username: entry.username })
+  return NextResponse.json({ linked: true, username })
 }

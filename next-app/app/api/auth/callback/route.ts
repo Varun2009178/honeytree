@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
-import { findByUserCode } from "@/lib/device-codes"
+import { completeByUserCode } from "@/lib/device-codes"
 import { ownsProfile, deleteAccount } from "@/lib/delete-account"
 import { getBaseUrl } from "@/lib/base-url"
 
@@ -55,13 +55,11 @@ export async function GET(req: NextRequest) {
 
   // If this came from a device flow, mark the device code as complete
   if (userCode) {
-    const entry = findByUserCode(userCode)
-    if (entry) {
-      entry.status = "complete"
-      entry.accessToken = data.session.access_token
-      entry.userId = data.session.user.id
-      entry.username = username || data.session.user.email || ""
-    }
+    await completeByUserCode(userCode, {
+      accessToken: data.session.access_token,
+      userId: data.session.user.id,
+      username: username || data.session.user.email || "",
+    })
   }
 
   // Land the user on their public forest (their dashboard).

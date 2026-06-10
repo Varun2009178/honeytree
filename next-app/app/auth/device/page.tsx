@@ -113,7 +113,7 @@ function DashboardSignIn() {
     }
     setLoading(true)
     const supabase = getSupabaseBrowser()
-    const base = `${window.location.origin}/api/auth/callback`
+    const base = `${window.location.origin}/auth/complete`
     const redirectTo = code.length === 6 ? `${base}?state=${code}` : base
     const { error: authError } = await supabase.auth.signInWithOAuth({
       provider: "github",
