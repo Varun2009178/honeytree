@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { ForestDisplay, MiniTree } from "@/components/forest-display"
 
 // ─── Data ────────────────────────────────────────────────
-const CMDS = ["npm install -g honeytree", "honeytree init", "honeytree login", "honeytree"]
+const CMDS = ["npm install -g honeytree@latest", "honeytree init", "honeytree login", "honeytree"]
 
 const STEPS = [
   { n: "01", title: "Install & init", body: "One global install. honeytree init registers a Stop hook inside Claude Code — no manual steps needed." },

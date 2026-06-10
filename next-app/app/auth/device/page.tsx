@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation"
 import { getSupabaseBrowser } from "@/lib/supabase-browser"
 
 const STEPS = [
-  "npm install -g honeytree",
+  "npm install -g honeytree@latest",
   "honeytree init",
   "honeytree login",
 ]

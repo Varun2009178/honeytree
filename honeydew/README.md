@@ -10,7 +10,7 @@ Honeytree grows a pixel-art forest in your terminal as you code with Claude Code
 ## Quick start
 
 ```bash
-npm install -g honeytree
+npm install -g honeytree@latest
 honeytree init
 honeytree login
 honeytree
