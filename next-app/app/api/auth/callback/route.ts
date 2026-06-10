@@ -12,6 +12,16 @@ export async function GET(req: NextRequest) {
   const target = url.searchParams.get("target")
   const appUrl = getBaseUrl(req)
 
+  // Supabase forwards provider failures (e.g. GitHub profile fetch) as query
+  // params on PKCE flow; surface the real reason instead of a generic message.
+  const providerError =
+    url.searchParams.get("error_description") || url.searchParams.get("error")
+  if (providerError) {
+    return NextResponse.redirect(
+      `${appUrl}/auth/device?error_description=${encodeURIComponent(providerError)}`
+    )
+  }
+
   if (!code) {
     return NextResponse.redirect(`${appUrl}/auth/device?error=no_code`)
   }

@@ -1,6 +1,6 @@
 "use client"
 
-import { Suspense, useRef, useState } from "react"
+import { Suspense, useEffect, useRef, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { getSupabaseBrowser } from "@/lib/supabase-browser"
 
@@ -90,7 +90,19 @@ function DashboardSignIn() {
   const callbackError = params.get("error")
   const [userCode, setUserCode] = useState(prefilled)
   const [error, setError] = useState("")
+  const [providerError, setProviderError] = useState(
+    params.get("error_description") || ""
+  )
   const [loading, setLoading] = useState(false)
+
+  // Supabase often returns OAuth provider errors in the URL #fragment, which the
+  // server callback can't read. Pull the real reason out client-side.
+  useEffect(() => {
+    if (providerError) return
+    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""))
+    const desc = hash.get("error_description")
+    if (desc) setProviderError(desc)
+  }, [providerError])
 
   async function continueWithGitHub() {
     setError("")
@@ -105,7 +117,7 @@ function DashboardSignIn() {
     const redirectTo = code.length === 6 ? `${base}?state=${code}` : base
     const { error: authError } = await supabase.auth.signInWithOAuth({
       provider: "github",
-      options: { redirectTo },
+      options: { redirectTo, scopes: "read:user user:email" },
     })
     if (authError) {
       setError(authError.message)
@@ -122,10 +134,14 @@ function DashboardSignIn() {
         code from <code>honeytree login</code> below.
       </p>
 
-      {callbackError && (
-        <p className="device-error">
-          Sign-in didn&apos;t complete. Make sure you authorize with GitHub, then try again.
-        </p>
+      {providerError ? (
+        <p className="device-error">Couldn&apos;t sign in: {providerError}</p>
+      ) : (
+        callbackError && (
+          <p className="device-error">
+            Sign-in didn&apos;t complete. Make sure you authorize with GitHub, then try again.
+          </p>
+        )
       )}
       {error && <p className="device-error">{error}</p>}
 
