@@ -1,10 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { Suspense, useState } from "react"
+import { useSearchParams } from "next/navigation"
 import { getSupabaseBrowser } from "@/lib/supabase-browser"
 
-export default function DeviceAuthPage() {
-  const [userCode, setUserCode] = useState("")
+function DeviceAuthForm() {
+  const params = useSearchParams()
+  const prefilled = (params.get("code") || "").replace(/\D/g, "").slice(0, 6)
+  const [userCode, setUserCode] = useState(prefilled)
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
@@ -13,9 +16,9 @@ export default function DeviceAuthPage() {
     setError("")
     setLoading(true)
 
-    const code = userCode.trim().toUpperCase()
-    if (!code) {
-      setError("Please enter a code")
+    const code = userCode.trim()
+    if (code.length !== 6) {
+      setError("Enter the 6-digit code from your terminal")
       setLoading(false)
       return
     }
@@ -36,38 +39,45 @@ export default function DeviceAuthPage() {
   }
 
   return (
+    <div className="device-card">
+      <span className="kicker">Connect your terminal</span>
+      <h1 className="device-title">Link your Honeytree</h1>
+      <p className="device-sub">
+        Confirm the 6-digit code from your terminal, then sign in with GitHub. You&apos;ll
+        land on your forest.
+      </p>
+
+      <form onSubmit={handleSubmit} className="device-form">
+        <input
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          value={userCode}
+          onChange={(e) => setUserCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+          placeholder="123456"
+          className="device-input"
+          autoFocus
+          maxLength={6}
+        />
+
+        {error && <p className="device-error">{error}</p>}
+
+        <button type="submit" disabled={loading} className="device-btn">
+          {loading ? "Connecting..." : "Continue with GitHub"}
+        </button>
+      </form>
+    </div>
+  )
+}
+
+export default function DeviceAuthPage() {
+  return (
     <div className="shell">
       <div className="shell-inner">
         <div className="device-page">
-          <div className="device-card">
-            <span className="kicker">Connect your terminal</span>
-            <h1 className="device-title">Link your Honeytree</h1>
-            <p className="device-sub">
-              Enter the code shown in your terminal to sync your forest to the cloud.
-            </p>
-
-            <form onSubmit={handleSubmit} className="device-form">
-              <input
-                type="text"
-                value={userCode}
-                onChange={(e) => setUserCode(e.target.value.toUpperCase())}
-                placeholder="ABCD-1234"
-                className="device-input"
-                autoFocus
-                maxLength={9}
-              />
-
-              {error && <p className="device-error">{error}</p>}
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="device-btn"
-              >
-                {loading ? "Connecting..." : "Connect with GitHub"}
-              </button>
-            </form>
-          </div>
+          <Suspense fallback={<div className="device-card" />}>
+            <DeviceAuthForm />
+          </Suspense>
         </div>
       </div>
     </div>

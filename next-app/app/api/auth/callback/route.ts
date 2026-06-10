@@ -23,6 +23,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(`${appUrl}/auth/device?error=auth_failed`)
   }
 
+  const username =
+    data.session.user.user_metadata?.user_name ||
+    data.session.user.user_metadata?.preferred_username ||
+    ""
+
   // If this came from a device flow, mark the device code as complete
   if (userCode) {
     const entry = findByUserCode(userCode)
@@ -30,12 +35,13 @@ export async function GET(req: NextRequest) {
       entry.status = "complete"
       entry.accessToken = data.session.access_token
       entry.userId = data.session.user.id
-      entry.username =
-        data.session.user.user_metadata?.user_name ||
-        data.session.user.email ||
-        ""
+      entry.username = username || data.session.user.email || ""
     }
   }
 
+  // Land the user on their public forest (their dashboard).
+  if (username) {
+    return NextResponse.redirect(`${appUrl}/${username}`)
+  }
   return NextResponse.redirect(`${appUrl}/auth/callback?success=true`)
 }

@@ -117,7 +117,14 @@ function TerminalDemo() {
 }
 
 // ─── Install ─────────────────────────────────────────────
-function Install() {
+const CMD_NOTES = [
+  "Install the CLI globally",
+  "Register the Claude Code hook",
+  "Get a sign-in link in your terminal",
+  "Watch your forest grow",
+]
+
+function QuickStart() {
   const [copied, setCopied] = useState<number | null>(null)
   function copy(cmd: string, i: number) {
     navigator.clipboard.writeText(cmd).catch(() => {})
@@ -125,20 +132,30 @@ function Install() {
     setTimeout(() => setCopied(c => c === i ? null : c), 1400)
   }
   return (
-    <div className="install">
-      <p className="kicker">Quick start</p>
-      <ol className="cmd-list">
+    <section id="start" className="quickstart">
+      <p className="kicker centered">Quick start</p>
+      <h2 className="quickstart-title">Get started in four commands</h2>
+      <p className="quickstart-sub">
+        Honeytree lives in your terminal. <code>honeytree login</code> prints a link &mdash;
+        open it, sign in with GitHub, and you land on your forest.
+      </p>
+      <ol className="qs-list">
         {CMDS.map((cmd, i) => (
-          <li key={cmd} className="cmd-item">
-            <span className="cmd-num">{i + 1}</span>
-            <code className="cmd-code">{cmd}</code>
-            <button className="cmd-btn" onClick={() => copy(cmd, i)}>
-              {copied === i ? "\u2713" : "Copy"}
+          <li key={cmd} className="qs-item">
+            <span className="qs-num">{i + 1}</span>
+            <div className="qs-cmd">
+              <code className="qs-code">
+                <span className="qs-prompt">$</span> {cmd}
+              </code>
+              <span className="qs-note">{CMD_NOTES[i]}</span>
+            </div>
+            <button className="qs-btn" onClick={() => copy(cmd, i)}>
+              {copied === i ? "Copied" : "Copy"}
             </button>
           </li>
         ))}
       </ol>
-    </div>
+    </section>
   )
 }
 
@@ -255,17 +272,15 @@ export default function Home() {
 
         <section className="hero">
           <h1>Grow a <span className="hero-forest">forest</span><br />with Claude Code.</h1>
-          <p className="hero-sub">Honeytree plants a pixel-art tree in your terminal after every Claude Code prompt. Watch a forest emerge as you build &mdash; then plant real ones.</p>
+          <p className="hero-sub">Every Claude Code prompt plants a tree in your terminal. Reach milestones to plant real ones.</p>
           <div className="hero-actions">
-            <a href="https://www.npmjs.com/package/honeytree" target="_blank" rel="noopener noreferrer" className="hero-btn-primary">Get the CLI</a>
+            <a href="#start" className="hero-btn-primary">Get started</a>
             <a href="https://github.com/Varun2009178/honeytree" target="_blank" rel="noopener noreferrer" className="hero-btn-secondary">View on GitHub</a>
           </div>
         </section>
 
-        <div className="mid-grid">
-          <Install />
-          <HowItWorks />
-        </div>
+        <QuickStart />
+        <HowItWorks />
 
         <Biomes />
         <Species />

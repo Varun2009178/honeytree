@@ -36,13 +36,17 @@ export async function loginWithDevice(apiUrl = process.env.HONEYTREE_API_URL || 
     console.error("  Server returned unexpected response. Is the Honeytree web app running?");
     return false;
   }
-  const { device_code, user_code, interval } = await res.json();
+  const { device_code, user_code, interval, verification_url } = await res.json();
+
+  const base = verification_url || `${apiUrl}/auth/device`;
+  const signInUrl = `${base}?code=${encodeURIComponent(user_code)}`;
 
   console.log();
-  console.log(`  Your code: ${user_code}`);
+  console.log("  Open this link to sign in:");
+  console.log(`  \x1b[36m${signInUrl}\x1b[0m`);
   console.log();
-  console.log("  Enter this code on your Honeytree dashboard to link your terminal.");
-  console.log("  Waiting...");
+  console.log(`  (or enter code ${user_code} manually at ${base})`);
+  console.log("  Waiting for you to sign in...");
 
   while (true) {
     await new Promise((r) => setTimeout(r, (interval || 5) * 1000));

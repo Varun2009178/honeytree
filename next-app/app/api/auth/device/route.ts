@@ -2,16 +2,9 @@ import { NextResponse } from "next/server"
 import crypto from "crypto"
 import { setDeviceCode, cleanExpired } from "@/lib/device-codes"
 
-function generateCode(length: number): string {
-  return crypto
-    .randomBytes(length)
-    .toString("hex")
-    .toUpperCase()
-    .slice(0, length)
-}
-
 function generateUserCode(): string {
-  return `${generateCode(4)}-${generateCode(4)}`
+  // 6-digit numeric code, easy to read off a terminal and type.
+  return crypto.randomInt(0, 1_000_000).toString().padStart(6, "0")
 }
 
 export async function POST() {
