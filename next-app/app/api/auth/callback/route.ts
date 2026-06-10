@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { findByUserCode } from "@/lib/device-codes"
 import { ownsProfile, deleteAccount } from "@/lib/delete-account"
+import { getBaseUrl } from "@/lib/base-url"
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url)
@@ -9,7 +10,7 @@ export async function GET(req: NextRequest) {
   const userCode = url.searchParams.get("state")
   const intent = url.searchParams.get("intent")
   const target = url.searchParams.get("target")
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+  const appUrl = getBaseUrl(req)
 
   if (!code) {
     return NextResponse.redirect(`${appUrl}/auth/device?error=no_code`)

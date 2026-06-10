@@ -3,6 +3,7 @@ import Stripe from "stripe"
 import { createClient } from "@supabase/supabase-js"
 import { getSupabase } from "@/lib/supabase"
 import { availableToPlant, resolveQuantity } from "@/lib/eligibility"
+import { getBaseUrl } from "@/lib/base-url"
 
 // Lazy init so a missing key at build time doesn't break `next build`.
 // The key is still read from the environment, only at request time.
@@ -61,7 +62,12 @@ export async function POST(req: NextRequest) {
   }
   const quantity = resolved.quantity
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+  const appUrl = getBaseUrl(req)
+  const username =
+    (user.user_metadata?.user_name as string | undefined) ||
+    (user.user_metadata?.preferred_username as string | undefined) ||
+    ""
+  const dashboard = username ? `${appUrl}/${username}` : `${appUrl}/`
 
   const session = await getStripe().checkout.sessions.create({
     mode: "payment",
@@ -80,8 +86,8 @@ export async function POST(req: NextRequest) {
       },
     ],
     metadata: { user_id: user.id, quantity: String(quantity) },
-    success_url: `${appUrl}/dashboard?planted=true`,
-    cancel_url: `${appUrl}/dashboard`,
+    success_url: `${dashboard}?planted=true`,
+    cancel_url: dashboard,
   })
 
   return NextResponse.json({ url: session.url })

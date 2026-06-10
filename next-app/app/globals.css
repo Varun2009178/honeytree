@@ -118,6 +118,26 @@ pre{font-family:var(--mono)}
   transition:border-color 160ms,transform 120ms;
 }
 .hero-btn-secondary:hover{border-color:var(--tx3);transform:translateY(-1px)}
+.hero-btn-dashboard{
+  padding:13px 28px;
+  border-radius:10px;
+  background:var(--bg-up);color:var(--tx1);
+  border:1px solid var(--tx1);
+  font-size:.92rem;font-weight:600;
+  font-family:var(--font);cursor:pointer;
+  transition:background 160ms,color 160ms,transform 120ms;
+}
+.hero-btn-dashboard:hover{background:var(--tx1);color:var(--btnx);transform:translateY(-1px)}
+.hero-alt{
+  margin-top:16px;
+  font-size:.85rem;color:var(--tx3);
+}
+.hero-link-btn{
+  background:none;border:0;padding:0;cursor:pointer;
+  font:inherit;color:var(--green);font-weight:600;
+}
+.hero-link-btn:hover{text-decoration:underline}
+.hero-alt a:hover{color:var(--tx1)}
 
 /* ── kicker ─────────────────────────────────────────────── */
 .kicker{

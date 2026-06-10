@@ -287,8 +287,11 @@ export default function Home() {
           <p className="hero-sub">Every Claude Code prompt plants a tree in your terminal. Reach milestones to plant real ones.</p>
           <div className="hero-actions">
             <a href="#start" className="hero-btn-primary">Get started</a>
-            <a href="https://github.com/Varun2009178/honeytree" target="_blank" rel="noopener noreferrer" className="hero-btn-secondary">View on GitHub</a>
+            <button onClick={enterDashboard} className="hero-btn-dashboard">Open dashboard →</button>
           </div>
+          <p className="hero-alt">
+            Already set up? <button onClick={enterDashboard} className="hero-link-btn">Open your forest</button> · <a href="https://github.com/Varun2009178/honeytree" target="_blank" rel="noopener noreferrer">GitHub</a>
+          </p>
         </section>
 
         <QuickStart />
