@@ -529,7 +529,28 @@ pre{font-family:var(--mono)}
 }
 .device-btn:hover{opacity:.85}
 .device-btn:disabled{opacity:.5;cursor:wait}
-.device-input-sm{font-size:1rem;letter-spacing:.18em}
+.device-btn-wide{width:100%;margin-top:18px}
+
+/* six-digit code boxes */
+.otp-row{display:flex;gap:8px;justify-content:center}
+.otp-box{
+  width:46px;height:56px;
+  text-align:center;
+  font-family:var(--mono);font-size:1.5rem;font-weight:500;
+  background:var(--bg-up);
+  border:1px solid var(--border);
+  border-radius:11px;color:var(--tx1);
+  outline:none;
+  transition:border-color 140ms,box-shadow 140ms;
+}
+.otp-box:focus{
+  border-color:var(--green);
+  box-shadow:0 0 0 3px var(--green-l);
+}
+@media (max-width:420px){
+  .otp-row{gap:6px}
+  .otp-box{width:42px;height:52px;font-size:1.3rem}
+}
 
 /* device page: terminal setup instructions */
 .device-steps{
