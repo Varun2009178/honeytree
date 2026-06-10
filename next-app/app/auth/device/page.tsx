@@ -117,7 +117,7 @@ function DashboardSignIn() {
     const redirectTo = code.length === 6 ? `${base}?state=${code}` : base
     const { error: authError } = await supabase.auth.signInWithOAuth({
       provider: "github",
-      options: { redirectTo },
+      options: { redirectTo, scopes: "read:user user:email" },
     })
     if (authError) {
       setError(authError.message)

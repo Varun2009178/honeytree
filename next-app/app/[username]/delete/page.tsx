@@ -17,7 +17,7 @@ function DeleteConfirm() {
     const redirectTo = `${window.location.origin}/api/auth/callback?intent=delete&target=${encodeURIComponent(username)}`
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "github",
-      options: { redirectTo },
+      options: { redirectTo, scopes: "read:user user:email" },
     })
     if (error) setLoading(false)
   }
