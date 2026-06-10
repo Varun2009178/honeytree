@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { findByUserCode } from "@/lib/device-codes"
+import { ownsProfile, deleteAccount } from "@/lib/delete-account"
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url)
   const code = url.searchParams.get("code")
   const userCode = url.searchParams.get("state")
+  const intent = url.searchParams.get("intent")
+  const target = url.searchParams.get("target")
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
 
   if (!code) {
@@ -27,6 +30,17 @@ export async function GET(req: NextRequest) {
     data.session.user.user_metadata?.user_name ||
     data.session.user.user_metadata?.preferred_username ||
     ""
+
+  // Account deletion: only the owner (verified by this GitHub sign-in) may delete.
+  if (intent === "delete") {
+    if (target && ownsProfile(username, target)) {
+      await deleteAccount(data.session.user.id)
+      return NextResponse.redirect(`${appUrl}/account/deleted`)
+    }
+    return NextResponse.redirect(
+      `${appUrl}/${encodeURIComponent(target || username)}/delete?error=not_owner`
+    )
+  }
 
   // If this came from a device flow, mark the device code as complete
   if (userCode) {

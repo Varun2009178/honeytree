@@ -42,6 +42,8 @@ export default async function ProfilePage({
   })
 
   const shareUrl = `${SITE_URL}/${model.username}`
+  const isEmpty =
+    model.virtualTrees === 0 && model.realTrees === 0 && model.forest.length === 0
 
   return (
     <main
@@ -89,17 +91,96 @@ export default async function ProfilePage({
         </section>
       )}
 
-      <section
-        style={{
-          background: "#0c1410",
-          borderRadius: 12,
-          padding: 16,
-          overflow: "hidden",
-        }}
-      >
-        <UserForestDisplay trees={model.forest} />
-      </section>
+      {isEmpty ? (
+        <Onboarding />
+      ) : (
+        <section
+          style={{
+            background: "#0c1410",
+            borderRadius: 12,
+            padding: 16,
+            overflow: "hidden",
+          }}
+        >
+          <UserForestDisplay trees={model.forest} />
+        </section>
+      )}
+
+      <footer style={{ marginTop: 48, textAlign: "center" }}>
+        <a
+          href={`/${model.username}/delete`}
+          style={{ fontSize: 12, color: "#b8b5af", textDecoration: "none" }}
+        >
+          Delete this account
+        </a>
+      </footer>
     </main>
+  )
+}
+
+const ONBOARDING_CMDS = [
+  { cmd: "npm install -g honeytree", note: "Install the CLI" },
+  { cmd: "honeytree init", note: "Register the Claude Code hook" },
+  { cmd: "honeytree login", note: "Link this account" },
+  { cmd: "honeytree", note: "Watch your forest grow" },
+]
+
+function Onboarding() {
+  return (
+    <section
+      style={{
+        background: "#faf9f7",
+        border: "1px solid #ece9e4",
+        borderRadius: 12,
+        padding: "28px 24px",
+      }}
+    >
+      <h2 style={{ fontSize: 16, fontWeight: 600, margin: "0 0 6px" }}>
+        Your forest is empty &mdash; let&apos;s plant the first tree.
+      </h2>
+      <p style={{ fontSize: 14, color: "#6b6760", margin: "0 0 20px" }}>
+        Run these four commands in your terminal. Every Claude Code prompt then plants a
+        tree here automatically.
+      </p>
+      <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 10 }}>
+        {ONBOARDING_CMDS.map((c, i) => (
+          <li key={c.cmd} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <span
+              style={{
+                flexShrink: 0,
+                width: 24,
+                height: 24,
+                borderRadius: "50%",
+                background: "#e6f0ea",
+                color: "#4a7c59",
+                fontSize: 12,
+                fontWeight: 700,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {i + 1}
+            </span>
+            <code
+              style={{
+                flex: 1,
+                padding: "12px 14px",
+                background: "#0d0e10",
+                borderRadius: 8,
+                fontFamily: "ui-monospace, Menlo, monospace",
+                fontSize: 14,
+                color: "#e7e5e4",
+              }}
+            >
+              <span style={{ color: "#5b9a4a", marginRight: 8 }}>$</span>
+              {c.cmd}
+            </code>
+            <span style={{ fontSize: 12, color: "#9b9a97", minWidth: 110 }}>{c.note}</span>
+          </li>
+        ))}
+      </ol>
+    </section>
   )
 }
 

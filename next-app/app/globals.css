@@ -59,11 +59,11 @@ pre{font-family:var(--mono)}
 .nav-links{display:flex;align-items:center;gap:22px}
 .nav-npm{
   font-family:var(--mono);font-size:.72rem;font-weight:500;
-  padding:3px 10px;border-radius:999px;
-  background:var(--green-l);color:var(--green);
-  transition:background 160ms;
+  padding:5px 12px;border-radius:999px;border:0;cursor:pointer;
+  background:var(--green);color:#fff;
+  transition:background 160ms,transform 120ms;
 }
-.nav-npm:hover{background:#d2e8da}
+.nav-npm:hover{background:#3d6b4c;transform:translateY(-1px)}
 .nav-link{
   font-size:.85rem;color:var(--tx3);
   transition:color 160ms;
@@ -509,6 +509,35 @@ pre{font-family:var(--mono)}
 }
 .device-btn:hover{opacity:.85}
 .device-btn:disabled{opacity:.5;cursor:wait}
+
+/* ── delete account ─────────────────────────────────────── */
+.delete-list{
+  list-style:none;margin:4px 0 8px;padding:0;
+  display:grid;gap:8px;text-align:left;
+}
+.delete-list li{
+  font-size:.88rem;line-height:1.4;
+  padding-left:24px;position:relative;
+}
+.delete-keep{color:var(--tx2)}
+.delete-keep::before{content:"✓";position:absolute;left:0;color:var(--green);font-weight:700}
+.delete-gone{color:var(--tx1)}
+.delete-gone::before{content:"✕";position:absolute;left:0;color:#c44;font-weight:700}
+.delete-btn{
+  width:100%;
+  padding:13px 20px;border-radius:10px;
+  background:#c0392b;color:#fff;
+  font-size:.90rem;font-weight:600;font-family:var(--font);
+  border:none;cursor:pointer;
+  transition:opacity 160ms;
+}
+.delete-btn:hover{opacity:.88}
+.delete-btn:disabled{opacity:.5;cursor:wait}
+.delete-cancel{
+  display:block;margin-top:14px;
+  font-size:.85rem;color:var(--tx3);
+}
+.delete-cancel:hover{color:var(--tx1)}
 
 /* ── auth callback page ────────────────────────────────── */
 .callback-page{
