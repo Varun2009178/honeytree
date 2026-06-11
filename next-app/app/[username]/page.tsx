@@ -1,9 +1,12 @@
 import { notFound } from "next/navigation"
 import { getSupabase } from "@/lib/supabase"
 import { buildProfileModel } from "@/lib/profile"
+import { availableToPlant, virtualToNext } from "@/lib/eligibility"
 import { UserForestDisplay } from "@/components/user-forest-display"
 import { ShareButton } from "./ShareButton"
 import { CopyCommand } from "./CopyCommand"
+import { PlantButton } from "./PlantButton"
+import { AutoRefresh } from "./AutoRefresh"
 
 export const dynamic = "force-dynamic"
 
@@ -11,10 +14,13 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://tryhoney.xyz"
 
 export default async function ProfilePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ username: string }>
+  searchParams: Promise<{ planted?: string }>
 }) {
   const { username } = await params
+  const { planted } = await searchParams
   const supabase = getSupabase()
 
   const { data: profile } = await supabase
@@ -46,6 +52,11 @@ export default async function ProfilePage({
   const isEmpty =
     model.virtualTrees === 0 && model.realTrees === 0 && model.forest.length === 0
 
+  // 50-virtual-tree cycle: progress resets after each unlocked credit.
+  const available = availableToPlant(model.virtualTrees, model.realTrees)
+  const toNext = virtualToNext(model.virtualTrees)
+  const cycleProgress = 50 - toNext // 0..49 into the current 50-tree cycle
+
   return (
     <main
       style={{
@@ -68,10 +79,89 @@ export default async function ProfilePage({
         <ShareButton url={shareUrl} />
       </header>
 
+      <AutoRefresh />
+
+      {planted === "true" && (
+        <section
+          style={{
+            marginBottom: 32,
+            padding: "16px 20px",
+            background: "#e6f0ea",
+            border: "1px solid #c4dccd",
+            borderRadius: 12,
+            fontSize: 14,
+            color: "#2d5b39",
+            lineHeight: 1.55,
+          }}
+        >
+          🎉 <strong>You planted a real tree!</strong> It&apos;s going in the ground via One
+          Tree Planted — a receipt is on its way to your inbox, and a new tree variety just
+          unlocked in your forest.
+        </section>
+      )}
+
       <section style={{ display: "flex", gap: 32, marginBottom: 40 }}>
         <Stat value={model.virtualTrees.toLocaleString()} label="virtual trees grown" />
         <Stat value={model.realTrees.toLocaleString()} label="real trees planted" />
         <Stat value={`${model.co2Kg.toLocaleString()} kg`} label="CO₂ / year" />
+      </section>
+
+      <section
+        style={{
+          marginBottom: 40,
+          padding: "24px",
+          background: "#faf9f7",
+          border: "1px solid #ece9e4",
+          borderRadius: 12,
+        }}
+      >
+        <h2
+          style={{
+            fontSize: 13,
+            textTransform: "uppercase",
+            letterSpacing: 1,
+            color: "#9b9a97",
+            margin: "0 0 14px",
+          }}
+        >
+          Next real tree
+        </h2>
+
+        <div
+          style={{
+            height: 10,
+            borderRadius: 999,
+            background: "#ece9e4",
+            overflow: "hidden",
+            marginBottom: 8,
+          }}
+        >
+          <div
+            style={{
+              width: `${available > 0 ? 100 : (cycleProgress / 50) * 100}%`,
+              height: "100%",
+              borderRadius: 999,
+              background: available > 0 ? "#4a7c59" : "#7ba88a",
+              transition: "width 400ms ease",
+            }}
+          />
+        </div>
+        <p style={{ fontSize: 13, color: "#6b6760", margin: "0 0 18px" }}>
+          {available > 0
+            ? `${50}/50 — real tree unlocked! The cycle restarts after you plant.`
+            : `${cycleProgress}/50 virtual trees toward your next real one`}
+        </p>
+
+        <PlantButton username={model.username} available={available} toNext={toNext} />
+
+        {model.realTrees > 0 && (
+          <p style={{ fontSize: 13, color: "#4a7c59", margin: "16px 0 0", lineHeight: 1.6 }}>
+            🌳 {model.realTrees.toLocaleString()} real tree
+            {model.realTrees === 1 ? "" : "s"} planted so far — absorbing about{" "}
+            {model.co2Kg.toLocaleString()} kg of CO₂ every year. Each one unlocks new tree
+            colors that grow in your forest below.
+          </p>
+        )}
       </section>
 
       {model.varieties.length > 0 && (

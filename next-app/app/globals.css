@@ -629,6 +629,37 @@ pre{font-family:var(--mono)}
   font-size:.85rem;color:var(--tx3);
 }
 .delete-cancel:hover{color:var(--tx1)}
+.delete-local{
+  margin-top:28px;padding-top:22px;
+  border-top:1px solid var(--border-s);
+  text-align:left;
+}
+.delete-local-label{
+  font-size:.82rem;color:var(--tx3);line-height:1.55;
+  margin-bottom:12px;
+}
+
+/* ── plant real tree CTA (dashboard) ───────────────────── */
+.plant-btn{
+  width:100%;
+  padding:14px 20px;border-radius:10px;
+  background:var(--green);color:#fff;
+  font-size:.95rem;font-weight:600;font-family:inherit;
+  border:none;cursor:pointer;
+  transition:background 160ms,transform 120ms;
+}
+.plant-btn:hover{background:#3d6b4c;transform:translateY(-1px)}
+.plant-btn:disabled{transform:none;cursor:default}
+.plant-btn-locked{
+  background:#ece9e4;color:#8c8780;
+}
+.plant-btn-locked:hover{background:#ece9e4}
+.plant-note{
+  margin-top:10px;font-size:.82rem;color:#9b9a97;text-align:center;
+}
+.plant-error{
+  margin-top:8px;font-size:.84rem;color:#c44;text-align:center;
+}
 
 /* ── auth callback page ────────────────────────────────── */
 .callback-page{

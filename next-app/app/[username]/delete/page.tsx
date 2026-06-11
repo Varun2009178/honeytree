@@ -3,6 +3,9 @@
 import { Suspense, useState } from "react"
 import { useParams, useSearchParams } from "next/navigation"
 import { getSupabaseBrowser } from "@/lib/supabase-browser"
+import { CopyCommand } from "../CopyCommand"
+
+const LOCAL_CLEANUP = "npm uninstall -g honeytree && rm -rf ~/.honeydew"
 
 function DeleteConfirm() {
   const params = useParams<{ username: string }>()
@@ -52,6 +55,14 @@ function DeleteConfirm() {
       <a href={`/${username}`} className="delete-cancel">
         Cancel
       </a>
+
+      <div className="delete-local">
+        <p className="delete-local-label">
+          Also want to clear everything on your computer? Run this in your terminal — it
+          uninstalls the CLI and deletes your local forest, login, and rewards cache:
+        </p>
+        <CopyCommand command={LOCAL_CLEANUP} />
+      </div>
     </div>
   )
 }
