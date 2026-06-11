@@ -9,6 +9,7 @@ const STEPS = [
   "honeytree init",
   "honeytree login",
 ]
+const ONE_LINER = "npm install -g honeytree@latest && honeytree init && honeytree login"
 
 function OtpBoxes({
   code,
@@ -94,6 +95,7 @@ function DashboardSignIn() {
     params.get("error_description") || ""
   )
   const [loading, setLoading] = useState(false)
+  const [copiedOneLiner, setCopiedOneLiner] = useState(false)
 
   // Supabase often returns OAuth provider errors in the URL #fragment, which the
   // server callback can't read. Pull the real reason out client-side.
@@ -163,9 +165,29 @@ function DashboardSignIn() {
             </li>
           ))}
         </ol>
+        <p className="device-steps-label" style={{ marginTop: 16 }}>
+          Or all at once:
+        </p>
+        <div className="device-step">
+          <code className="device-step-cmd">
+            <span className="device-step-prompt">$</span> {ONE_LINER}
+          </code>
+          <button
+            type="button"
+            className="device-copy-btn"
+            onClick={() => {
+              navigator.clipboard.writeText(ONE_LINER).catch(() => {})
+              setCopiedOneLiner(true)
+              setTimeout(() => setCopiedOneLiner(false), 1400)
+            }}
+          >
+            {copiedOneLiner ? "Copied" : "Copy"}
+          </button>
+        </div>
         <p className="device-steps-note">
           <code>honeytree login</code> prints a sign-in link and a 6-digit code. Open the
-          link, or type the code above and continue with GitHub.
+          link, or type the code above and continue with GitHub. Then run{" "}
+          <code>honeytree</code> anytime to watch your forest live.
         </p>
       </div>
     </div>

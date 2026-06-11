@@ -3,6 +3,7 @@ import { getSupabase } from "@/lib/supabase"
 import { buildProfileModel } from "@/lib/profile"
 import { UserForestDisplay } from "@/components/user-forest-display"
 import { ShareButton } from "./ShareButton"
+import { CopyCommand } from "./CopyCommand"
 
 export const dynamic = "force-dynamic"
 
@@ -106,6 +107,8 @@ export default async function ProfilePage({
         </section>
       )}
 
+      <HowItWorks />
+
       <footer style={{ marginTop: 48, textAlign: "center" }}>
         <a
           href={`/${model.username}/delete`}
@@ -117,6 +120,8 @@ export default async function ProfilePage({
     </main>
   )
 }
+
+const ONE_LINER = "npm install -g honeytree@latest && honeytree init && honeytree login"
 
 const ONBOARDING_CMDS = [
   { cmd: "npm install -g honeytree@latest", note: "Install the CLI" },
@@ -180,7 +185,85 @@ function Onboarding() {
           </li>
         ))}
       </ol>
+
+      <p style={{ fontSize: 13, color: "#9b9a97", margin: "20px 0 8px" }}>
+        Or set everything up in one go:
+      </p>
+      <CopyCommand command={ONE_LINER} />
     </section>
+  )
+}
+
+function HowItWorks() {
+  return (
+    <section
+      style={{
+        marginTop: 40,
+        background: "#faf9f7",
+        border: "1px solid #ece9e4",
+        borderRadius: 12,
+        padding: "24px",
+      }}
+    >
+      <h2
+        style={{
+          fontSize: 13,
+          textTransform: "uppercase",
+          letterSpacing: 1,
+          color: "#9b9a97",
+          margin: "0 0 14px",
+        }}
+      >
+        How Honeytree works
+      </h2>
+      <ul
+        style={{
+          listStyle: "none",
+          margin: 0,
+          padding: 0,
+          display: "grid",
+          gap: 10,
+          fontSize: 14,
+          color: "#55504a",
+          lineHeight: 1.55,
+        }}
+      >
+        <li>
+          🌱 Every Claude Code prompt automatically plants a virtual tree in your forest —
+          bigger responses grow taller trees.
+        </li>
+        <li>
+          💻 Run <InlineCmd>honeytree</InlineCmd> in your terminal anytime to watch your
+          forest live while you code. This page is its shareable mirror.
+        </li>
+        <li>
+          🌍 Every 50 virtual trees unlocks a real tree planting for $1 — run{" "}
+          <InlineCmd>honeytree plant</InlineCmd> to plant it.
+        </li>
+        <li>
+          ✨ Real trees unlock new varieties (cherry blossom, pine, oak, ancient, mythic)
+          that start appearing in your forest. Check progress with{" "}
+          <InlineCmd>honeytree rewards</InlineCmd>.
+        </li>
+      </ul>
+    </section>
+  )
+}
+
+function InlineCmd({ children }: { children: React.ReactNode }) {
+  return (
+    <code
+      style={{
+        fontFamily: "ui-monospace, Menlo, monospace",
+        fontSize: "0.92em",
+        background: "#e6f0ea",
+        color: "#4a7c59",
+        padding: "1px 7px",
+        borderRadius: 6,
+      }}
+    >
+      {children}
+    </code>
   )
 }
 

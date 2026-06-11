@@ -5,6 +5,7 @@ import { ForestDisplay, MiniTree } from "@/components/forest-display"
 
 // ─── Data ────────────────────────────────────────────────
 const CMDS = ["npm install -g honeytree@latest", "honeytree init", "honeytree login", "honeytree"]
+const ONE_LINER = "npm install -g honeytree@latest && honeytree init && honeytree login"
 
 const STEPS = [
   { n: "01", title: "Install & init", body: "One global install. honeytree init registers a Stop hook inside Claude Code — no manual steps needed." },
@@ -156,6 +157,18 @@ function QuickStart() {
           </li>
         ))}
       </ol>
+
+      <p className="qs-oneliner-label">Or set everything up in one go:</p>
+      <div className="qs-item">
+        <div className="qs-cmd">
+          <code className="qs-code qs-code-sm">
+            <span className="qs-prompt">$</span> {ONE_LINER}
+          </code>
+        </div>
+        <button className="qs-btn" onClick={() => copy(ONE_LINER, 99)}>
+          {copied === 99 ? "Copied" : "Copy"}
+        </button>
+      </div>
     </section>
   )
 }

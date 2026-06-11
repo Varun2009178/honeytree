@@ -316,6 +316,12 @@ pre{font-family:var(--mono)}
   transition:background 150ms,border-color 150ms,color 150ms;
 }
 .qs-btn:hover{background:var(--btn);color:var(--btnx);border-color:var(--btn)}
+.qs-oneliner-label{
+  margin:24px 0 10px;
+  font-size:.85rem;color:var(--tx3);
+  text-align:center;
+}
+.qs-code-sm{font-size:.86rem}
 @media (max-width:560px){
   .quickstart{padding:32px 20px}
   .qs-item{gap:10px}
@@ -585,6 +591,15 @@ pre{font-family:var(--mono)}
 .device-steps-note code{
   font-family:var(--mono);font-size:.92em;color:var(--tx2);
 }
+.device-copy-btn{
+  flex-shrink:0;
+  padding:8px 12px;
+  border:1px solid var(--border);border-radius:8px;
+  background:var(--bg-up);color:var(--tx2);
+  font-size:.76rem;font-weight:600;cursor:pointer;
+  transition:background 150ms,border-color 150ms,color 150ms;
+}
+.device-copy-btn:hover{background:var(--btn);color:var(--btnx);border-color:var(--btn)}
 
 /* ── delete account ─────────────────────────────────────── */
 .delete-list{
