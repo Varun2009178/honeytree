@@ -55,14 +55,28 @@ function Completing() {
 
       if (deviceCode.length === 6) {
         setStatus("Linking your terminal…")
-        await fetch("/api/auth/device/link", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ user_code: deviceCode }),
-        }).catch(() => {})
+        // If the link fails (bad/expired code), say so — redirecting to the
+        // forest here would look like success while the terminal waits forever.
+        let linked = false
+        try {
+          const res = await fetch("/api/auth/device/link", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ user_code: deviceCode }),
+          })
+          linked = res.ok
+        } catch {}
+        if (!linked) {
+          setStatus(
+            "You're signed in, but that terminal code wasn't recognized (it may have expired). " +
+              "Run honeytree login again for a fresh code."
+          )
+          setFailed(true)
+          return
+        }
       }
 
       setStatus("Opening your forest…")

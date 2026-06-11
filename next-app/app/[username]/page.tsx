@@ -8,6 +8,7 @@ import { InstructionsButton } from "./InstructionsButton"
 import { PlantButton } from "./PlantButton"
 import { PlantPopup } from "./PlantPopup"
 import { AutoRefresh } from "./AutoRefresh"
+import { RefreshButton } from "./RefreshButton"
 
 export const dynamic = "force-dynamic"
 
@@ -207,6 +208,19 @@ export default async function ProfilePage({
         </section>
       )}
 
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 8,
+        }}
+      >
+        <h2 style={{ fontSize: 13, textTransform: "uppercase", letterSpacing: 1, color: "#9b9a97", margin: 0 }}>
+          Forest
+        </h2>
+        <RefreshButton />
+      </div>
       <section style={{ background: "#0c1410", borderRadius: 12, padding: 16, overflow: "hidden" }}>
         <UserForestDisplay trees={model.forest} />
       </section>

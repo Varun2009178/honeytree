@@ -697,6 +697,18 @@ pre{font-family:var(--mono)}
 }
 .modal-dismiss:hover{color:#37352f}
 
+/* small refresh control next to the forest */
+.forest-refresh{
+  width:26px;height:26px;border-radius:50%;
+  border:1px solid #e5e5e3;background:#fff;color:#9b9a97;
+  font-size:14px;line-height:1;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:color 140ms,border-color 140ms;
+}
+.forest-refresh:hover{color:#37352f;border-color:#d8d6d2}
+.forest-refresh.spinning{animation:refresh-spin 700ms linear infinite;color:#4a7c59}
+@keyframes refresh-spin{to{transform:rotate(360deg)}}
+
 /* ── auth callback page ────────────────────────────────── */
 .callback-page{
   min-height:80vh;

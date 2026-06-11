@@ -92,6 +92,26 @@ export async function completeByUserCode(
   return "ok"
 }
 
+// Read-only check used by the sign-in page BEFORE starting OAuth, so a typo'd
+// code errors immediately instead of after a full GitHub round-trip.
+export async function checkUserCode(
+  userCode: string
+): Promise<"pending" | "not_found" | "expired"> {
+  const db = getSupabase()
+  const { data: row } = await db
+    .from("device_codes")
+    .select("expires_at")
+    .eq("user_code", userCode)
+    .eq("status", "pending")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (!row) return "not_found"
+  if (new Date(row.expires_at).getTime() < Date.now()) return "expired"
+  return "pending"
+}
+
 export async function cleanExpired(): Promise<void> {
   const db = getSupabase()
   await db.from("device_codes").delete().lt("expires_at", new Date().toISOString())

@@ -114,6 +114,34 @@ function DashboardSignIn() {
       return
     }
     setLoading(true)
+
+    // Validate the code against the server BEFORE the GitHub round-trip, so a
+    // typo'd or expired code errors here instead of "succeeding" into a forest
+    // while the terminal waits forever.
+    if (code.length === 6) {
+      try {
+        const check = await fetch("/api/auth/device/check", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user_code: code }),
+        })
+        if (!check.ok) {
+          const { status } = await check.json().catch(() => ({ status: "not_found" }))
+          setError(
+            status === "expired"
+              ? "That code expired. Run honeytree login again for a fresh one."
+              : "That code wasn't found. Check the six digits in your terminal."
+          )
+          setLoading(false)
+          return
+        }
+      } catch {
+        setError("Couldn't verify the code. Check your connection and try again.")
+        setLoading(false)
+        return
+      }
+    }
+
     const supabase = getSupabaseBrowser()
     const base = `${window.location.origin}/auth/complete`
     const redirectTo = code.length === 6 ? `${base}?state=${code}` : base
