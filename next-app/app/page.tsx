@@ -52,7 +52,7 @@ function Nav() {
         <a href="https://github.com/Varun2009178/honeytree" target="_blank" rel="noopener noreferrer" className="nav-link nav-icon" aria-label="GitHub">
           <GitHubIcon />
         </a>
-        <a href="/auth/device" className="nav-npm">
+        <a href="/signin" className="nav-npm">
           <GitHubIcon /> Sign in
         </a>
       </nav>
@@ -290,8 +290,8 @@ export default function Home() {
           <h1>Grow a <span className="hero-forest">forest</span><br />with Claude Code.</h1>
           <p className="hero-sub">Every Claude Code prompt plants a tree in your terminal. Reach milestones to plant real ones.</p>
           <div className="hero-actions">
-            <a href="#start" className="hero-btn-primary">Get started</a>
-            <a href="/auth/device" className="hero-btn-dashboard">
+            <a href="/auth/device" className="hero-btn-primary">Get started</a>
+            <a href="/signin" className="hero-btn-dashboard">
               <GitHubIcon /> Sign in to your dashboard
             </a>
           </div>
