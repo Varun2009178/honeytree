@@ -29,7 +29,7 @@ export function isLoggedIn() {
   return !!(auth && auth.access_token);
 }
 
-export async function loginWithDevice(apiUrl = process.env.HONEYTREE_API_URL || "https://tryhoney.xyz") {
+export async function loginWithDevice(apiUrl = process.env.HONEYTREE_API_URL || "https://www.tryhoney.xyz") {
   const res = await fetch(`${apiUrl}/api/auth/device`, { method: "POST" });
   const contentType = res.headers.get("content-type") || "";
   if (!contentType.includes("application/json")) {

@@ -4,7 +4,7 @@ import { readForest } from "./state.js";
 import { syncToCloud } from "./sync.js";
 import { asciiTree } from "./ascii-tree.js";
 
-const API_URL = process.env.HONEYTREE_API_URL || "https://tryhoney.xyz";
+const API_URL = process.env.HONEYTREE_API_URL || "https://www.tryhoney.xyz";
 const POLL_INTERVAL_MS = 4000;
 const POLL_TIMEOUT_MS = 5 * 60 * 1000;
 

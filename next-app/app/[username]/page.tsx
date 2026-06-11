@@ -9,10 +9,11 @@ import { PlantButton } from "./PlantButton"
 import { PlantPopup } from "./PlantPopup"
 import { AutoRefresh } from "./AutoRefresh"
 import { RefreshButton } from "./RefreshButton"
+import { OwnerGate } from "./OwnerGate"
 
 export const dynamic = "force-dynamic"
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://tryhoney.xyz"
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.tryhoney.xyz"
 
 export default async function ProfilePage({
   params,
@@ -100,11 +101,14 @@ export default async function ProfilePage({
           <h1 style={{ fontSize: 22, fontWeight: 600, margin: 0 }}>{model.username}</h1>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <InstructionsButton />
+          <OwnerGate username={model.username}>
+            <InstructionsButton />
+          </OwnerGate>
           <ShareButton url={shareUrl} />
         </div>
       </header>
 
+      <OwnerGate username={model.username}>
       {checkoutStatus === "completed" && (
         <Banner tone="good">
           🎉 <strong>You planted a real tree!</strong> It&apos;s going in the ground via One
@@ -125,6 +129,7 @@ export default async function ProfilePage({
           reward will appear here in a moment, this page updates on its own.
         </Banner>
       )}
+      </OwnerGate>
 
       <section style={{ display: "flex", gap: 32, marginBottom: 32 }}>
         <Stat value={model.virtualTrees.toLocaleString()} label="virtual trees grown" />
@@ -132,6 +137,7 @@ export default async function ProfilePage({
         <Stat value={`${model.co2Kg.toLocaleString()} kg`} label="CO₂ / year" />
       </section>
 
+      <OwnerGate username={model.username}>
       <section
         style={{
           marginBottom: 32,
@@ -207,6 +213,7 @@ export default async function ProfilePage({
           </div>
         </section>
       )}
+      </OwnerGate>
 
       <div
         style={{
@@ -225,19 +232,23 @@ export default async function ProfilePage({
         <UserForestDisplay trees={model.forest} />
       </section>
       {!hasForest && (
-        <p style={{ fontSize: 13, color: "#9b9a97", margin: "12px 0 0", textAlign: "center" }}>
-          No trees yet. Run <Cmd>honeytree</Cmd> in your terminal and start prompting in
-          Claude Code. (See Instructions, top right.)
-        </p>
+        <OwnerGate username={model.username}>
+          <p style={{ fontSize: 13, color: "#9b9a97", margin: "12px 0 0", textAlign: "center" }}>
+            No trees yet. Run <Cmd>honeytree</Cmd> in your terminal and start prompting in
+            Claude Code. (See Instructions, top right.)
+          </p>
+        </OwnerGate>
       )}
 
       <footer style={{ marginTop: 48, textAlign: "center" }}>
-        <a
-          href={`/${model.username}/delete`}
-          style={{ fontSize: 12, color: "#b8b5af", textDecoration: "none" }}
-        >
-          Delete this account
-        </a>
+        <OwnerGate username={model.username}>
+          <a
+            href={`/${model.username}/delete`}
+            style={{ fontSize: 12, color: "#b8b5af", textDecoration: "none" }}
+          >
+            Delete this account
+          </a>
+        </OwnerGate>
       </footer>
     </main>
   )

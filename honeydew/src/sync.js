@@ -1,7 +1,7 @@
 import { getAuth, saveAuth } from "./auth.js";
 import { readForest } from "./state.js";
 
-const API_URL = process.env.HONEYTREE_API_URL || "https://tryhoney.xyz";
+const API_URL = process.env.HONEYTREE_API_URL || "https://www.tryhoney.xyz";
 
 export async function syncToCloud(forest) {
   const auth = getAuth();

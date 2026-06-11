@@ -302,7 +302,7 @@ export default function ForestApp() {
         // Open checkout in browser
         const auth = getAuth();
         if (auth && auth.access_token) {
-          fetch("https://tryhoney.xyz/api/checkout", {
+          fetch("https://www.tryhoney.xyz/api/checkout", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",

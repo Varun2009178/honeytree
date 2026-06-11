@@ -61,8 +61,10 @@ pre{font-family:var(--mono)}
   font-family:var(--mono);font-size:.72rem;font-weight:500;
   padding:5px 12px;border-radius:999px;border:0;cursor:pointer;
   background:var(--green);color:#fff;
+  display:inline-flex;align-items:center;gap:6px;
   transition:background 160ms,transform 120ms;
 }
+.nav-npm svg{width:13px;height:13px}
 .nav-npm:hover{background:#3d6b4c;transform:translateY(-1px)}
 .nav-link{
   font-size:.85rem;color:var(--tx3);
@@ -123,6 +125,7 @@ pre{font-family:var(--mono)}
   border-radius:10px;
   background:var(--bg-up);color:var(--tx1);
   border:1px solid var(--tx1);
+  display:inline-flex;align-items:center;gap:9px;
   font-size:.92rem;font-weight:600;
   font-family:var(--font);cursor:pointer;
   transition:background 160ms,color 160ms,transform 120ms;

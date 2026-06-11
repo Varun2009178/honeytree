@@ -40,7 +40,7 @@ export function hasCherryBlossom() { return hasReward("cherry"); }
 
 // Fetch rewards from server and cache locally
 export async function syncRewards(apiUrl) {
-  apiUrl = apiUrl || process.env.HONEYTREE_API_URL || "https://tryhoney.xyz";
+  apiUrl = apiUrl || process.env.HONEYTREE_API_URL || "https://www.tryhoney.xyz";
   const { getAuth } = await import("./auth.js");
   const auth = getAuth();
   if (!auth || !auth.access_token) return null;

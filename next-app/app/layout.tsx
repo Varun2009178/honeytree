@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     description:
       "A CLI that plants pixel-art trees in your terminal every time you use Claude Code.",
   },
-  metadataBase: new URL("https://tryhoney.xyz"),
+  metadataBase: new URL("https://www.tryhoney.xyz"),
 }
 
 export default function RootLayout({

@@ -50,7 +50,7 @@ export function renderReceiptText(model: ReceiptModel): string {
     lines.push("")
   }
   lines.push("Thank you for growing a real forest with Honeytree.")
-  lines.push("https://tryhoney.xyz")
+  lines.push("https://www.tryhoney.xyz")
   return lines.join("\n")
 }
 
@@ -77,7 +77,7 @@ export function renderReceiptHtml(model: ReceiptModel): string {
     <p style="margin:12px 0;">🌳 ${model.virtualTrees} virtual trees · 🔥 ${model.streak} day streak</p>
     ${model.badges.length ? `<p style="margin:12px 0 4px;">Your badges:</p><ul>${badgeItems}</ul>` : ""}
     <p style="margin:24px 0 0;color:#a8a29e;">Thank you for growing a real forest with Honeytree.</p>
-    <p style="margin:4px 0;"><a href="https://tryhoney.xyz" style="color:#f59e0b;">View your forest →</a></p>
+    <p style="margin:4px 0;"><a href="https://www.tryhoney.xyz" style="color:#f59e0b;">View your forest →</a></p>
   </div>
 </body>
 </html>`
