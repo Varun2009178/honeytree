@@ -69,16 +69,32 @@ export default function ForestApp() {
   const viewportXRef = useRef(viewportX);
   viewportXRef.current = viewportX;
 
-  // Fetch rewards from server (async, non-blocking)
+  // Fetch rewards from server, then re-poll so a variety unlocked on the web
+  // (after planting a real tree) appears here live, without restarting.
   useEffect(() => {
-    if (isLoggedIn()) {
-      syncRewards().then((r) => {
-        if (r) {
+    if (!isLoggedIn()) return;
+    let cancelled = false;
+    const pull = () =>
+      syncRewards()
+        .then((r) => {
+          if (!r || cancelled) return;
           setRewards(r);
-          setCelebrationQueue(uncelebratedUnlocked());
-        }
-      }).catch(() => {});
-    }
+          // Queue any newly-unlocked celebrations without dropping one mid-show.
+          setCelebrationQueue((prev) => {
+            const merged = [...prev];
+            for (const k of uncelebratedUnlocked()) {
+              if (!merged.includes(k)) merged.push(k);
+            }
+            return merged;
+          });
+        })
+        .catch(() => {});
+    pull();
+    const id = setInterval(pull, 30000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
   }, []);
 
   // Sync width to disk

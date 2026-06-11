@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
 
       // Plant the real tree(s) via Good API.
       let treeId: string | null = null
-      let status: "completed" | "pending" = "pending"
+      let status: "completed" | "pending" | "refunded" = "pending"
       let goodJson: unknown = null
       const goodApiKey = process.env.GOOD_API_KEY_TEST
       if (goodApiKey) {
@@ -83,7 +83,24 @@ export async function POST(req: NextRequest) {
             treeId = parseTreeId(goodJson)
           }
         } catch {
-          // Leave as pending; reward not granted until Good API confirms.
+          // fall through to the refund path below
+        }
+      }
+
+      // No confirmed planting (missing key, non-2xx, or network error): refund
+      // the charge so the buyer is never left paid-with-no-tree, and grant no
+      // reward. Recorded as "refunded" — it doesn't count toward real-tree
+      // totals (those filter status === "completed"), so the credit stays open.
+      if (status !== "completed") {
+        try {
+          if (session.payment_intent) {
+            await getStripe().refunds.create({
+              payment_intent: session.payment_intent as string,
+            })
+          }
+          status = "refunded"
+        } catch {
+          // Refund itself failed; leave pending for manual follow-up.
         }
       }
 

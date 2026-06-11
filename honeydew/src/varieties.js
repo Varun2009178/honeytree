@@ -5,10 +5,10 @@
 export const VARIETIES = [
   { key: "standard", threshold: 0,  label: "Standard",       species: [{ type: "birch" }, { type: "willow" }] },
   { key: "cherry",   threshold: 1,  label: "Cherry Blossom", species: [{ type: "cherry_blossom" }] },
-  { key: "pine",     threshold: 5,  label: "Pine",           species: [{ type: "pine" }] },
-  { key: "oak",      threshold: 10, label: "Oak",            species: [{ type: "oak" }] },
-  { key: "ancient",  threshold: 25, label: "Ancient",        species: [{ type: "oak", variant: "ancient" }] },
-  { key: "mythic",   threshold: 50, label: "Mythic",         species: [{ type: "mythic" }] },
+  { key: "pine",     threshold: 2,  label: "Pine",           species: [{ type: "pine" }] },
+  { key: "oak",      threshold: 4,  label: "Oak",            species: [{ type: "oak" }] },
+  { key: "ancient",  threshold: 7,  label: "Ancient",        species: [{ type: "oak", variant: "ancient" }] },
+  { key: "mythic",   threshold: 10, label: "Mythic",         species: [{ type: "mythic" }] },
 ];
 
 // Build the species pool from the set of unlocked variety keys.

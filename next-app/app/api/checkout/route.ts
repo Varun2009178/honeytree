@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
       },
     ],
     metadata: { user_id: user.id, quantity: String(quantity) },
-    success_url: `${dashboard}?planted=true`,
+    success_url: `${dashboard}?planted={CHECKOUT_SESSION_ID}`,
     cancel_url: dashboard,
   })
 

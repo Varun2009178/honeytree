@@ -42,6 +42,18 @@ export default async function ProfilePage({
     .filter((p) => p.status === "completed")
     .reduce((sum, p) => sum + (p.real_trees_planted || 0), 0)
 
+  // After checkout, ?planted=<session_id> lets us show the exact outcome of
+  // THIS purchase (planted / refunded / still processing) rather than a guess.
+  let checkoutStatus: string | null = null
+  if (planted) {
+    const { data: pl } = await supabase
+      .from("plantings")
+      .select("status")
+      .eq("stripe_session_id", planted)
+      .maybeSingle()
+    checkoutStatus = pl?.status ?? "processing"
+  }
+
   const model = buildProfileModel({
     profile: { username: profile.username, avatar_url: profile.avatar_url },
     trees: trees ?? null,
@@ -92,23 +104,25 @@ export default async function ProfilePage({
         </div>
       </header>
 
-      {planted === "true" && (
-        <section
-          style={{
-            marginBottom: 28,
-            padding: "16px 20px",
-            background: "#e6f0ea",
-            border: "1px solid #c4dccd",
-            borderRadius: 12,
-            fontSize: 14,
-            color: "#2d5b39",
-            lineHeight: 1.55,
-          }}
-        >
+      {checkoutStatus === "completed" && (
+        <Banner tone="good">
           🎉 <strong>You planted a real tree!</strong> It&apos;s going in the ground via One
           Tree Planted. A receipt is on its way to your inbox, and a new tree variety just
           unlocked in your forest.
-        </section>
+        </Banner>
+      )}
+      {checkoutStatus === "refunded" && (
+        <Banner tone="warn">
+          ⚠️ <strong>We couldn&apos;t plant your tree right now</strong>, so your $1 was
+          refunded and no reward was granted. Nothing was charged. Please try again in a
+          little while.
+        </Banner>
+      )}
+      {(checkoutStatus === "processing" || checkoutStatus === "pending") && (
+        <Banner tone="neutral">
+          ⏳ <strong>Payment received.</strong> We&apos;re planting your real tree now. Your
+          reward will appear here in a moment, this page updates on its own.
+        </Banner>
       )}
 
       <section style={{ display: "flex", gap: 32, marginBottom: 32 }}>
@@ -229,6 +243,36 @@ function Cmd({ children }: { children: React.ReactNode }) {
     >
       {children}
     </code>
+  )
+}
+
+function Banner({
+  tone,
+  children,
+}: {
+  tone: "good" | "warn" | "neutral"
+  children: React.ReactNode
+}) {
+  const palette = {
+    good: { bg: "#e6f0ea", border: "#c4dccd", color: "#2d5b39" },
+    warn: { bg: "#fbf0e6", border: "#eccfb0", color: "#8a5320" },
+    neutral: { bg: "#f4f3f1", border: "#e3e1dd", color: "#55504a" },
+  }[tone]
+  return (
+    <section
+      style={{
+        marginBottom: 28,
+        padding: "16px 20px",
+        background: palette.bg,
+        border: `1px solid ${palette.border}`,
+        borderRadius: 12,
+        fontSize: 14,
+        color: palette.color,
+        lineHeight: 1.55,
+      }}
+    >
+      {children}
+    </section>
   )
 }
 

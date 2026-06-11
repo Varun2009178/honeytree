@@ -7,10 +7,10 @@ const REWARDS_FILE = path.join(os.homedir(), ".honeydew", "rewards.json");
 
 const TIERS = [
   { slug: "cherry",  label: "Cherry Blossom", threshold: 1,  description: "Cherry blossom trees in your forest" },
-  { slug: "pine",    label: "Pine",           threshold: 5,  description: "Evergreen pines in your forest" },
-  { slug: "oak",     label: "Oak",            threshold: 10, description: "Broad oaks in your forest" },
-  { slug: "ancient", label: "Ancient",        threshold: 25, description: "Rare tall golden ancients" },
-  { slug: "mythic",  label: "Mythic",         threshold: 50, description: "Glowing mythic trees" },
+  { slug: "pine",    label: "Pine",           threshold: 2,  description: "Evergreen pines in your forest" },
+  { slug: "oak",     label: "Oak",            threshold: 4,  description: "Broad oaks in your forest" },
+  { slug: "ancient", label: "Ancient",        threshold: 7,  description: "Rare tall golden ancients" },
+  { slug: "mythic",  label: "Mythic",         threshold: 10, description: "Glowing mythic trees" },
 ];
 
 export { TIERS };

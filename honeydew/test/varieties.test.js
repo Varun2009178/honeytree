@@ -9,7 +9,7 @@ test("VARIETIES lists six varieties in threshold order", () => {
   );
   assert.deepEqual(
     VARIETIES.map((v) => v.threshold),
-    [0, 1, 5, 10, 25, 50]
+    [0, 1, 2, 4, 7, 10]
   );
 });
 
