@@ -12,6 +12,8 @@ export interface ForestTree {
   type: string
   growth: number
   x: number
+  variant?: string | null
+  heightBonus?: number
 }
 
 export interface ProfileModel {

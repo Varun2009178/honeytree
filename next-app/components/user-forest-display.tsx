@@ -23,6 +23,10 @@ const C = {
   mythicBright: "#e0c3fc",
   mythicCore: "#7c4dff",
   mythicTrunk: "#5e35b1",
+  goldTop: "#FFD700",
+  goldMid: "#DAA520",
+  goldDark: "#B8860B",
+  goldTrunk: "#8B7355",
 }
 
 type Cell = { ch: string; col: string | null }
@@ -33,6 +37,8 @@ interface ForestTree {
   type: string
   growth: number
   x: number
+  variant?: string | null
+  heightBonus?: number
 }
 
 interface BiomeDef {
@@ -103,12 +109,44 @@ const SPRITES: Record<string, Record<string, Sprite>> = {
   },
 }
 
-function getSprite(type: string, growth: number): Sprite {
-  const s = SPRITES[type] || SPRITES.oak
-  if (growth < 0.2) return s.seed
-  if (growth < 0.5) return s.sapling
-  if (growth < 0.8) return s.young
-  return s.full
+// Tall golden tree for the Ancient reward (matches sprites.js ANCIENT_TREE).
+const ANCIENT: Record<string, Sprite> = {
+  seed: parseSprite(` g\n t`, { g: C.goldTop, t: C.goldTrunk }),
+  sapling: parseSprite(` gg\ngGg\n t`, { g: C.goldTop, G: C.goldMid, t: C.goldTrunk }),
+  young: parseSprite(`  Tg\n TGGg\nTgGGgT\n  tt\n  tt\n  tt`, { g: C.goldMid, G: C.goldDark, T: C.goldTop, t: C.goldTrunk }),
+  full: parseSprite(`   TT\n  TGGT\n TgGGGgT\nTgGGGGgT\n TgGGGg\n   tt\n   tt\n   tt`, { g: C.goldMid, G: C.goldDark, T: C.goldTop, t: C.goldTrunk }),
+}
+
+function growthStage(growth: number): "seed" | "sapling" | "young" | "full" {
+  if (growth < 0.2) return "seed"
+  if (growth < 0.5) return "sapling"
+  if (growth < 0.8) return "young"
+  return "full"
+}
+
+// rows are bottom-first; extra trunk rows at the bottom push the canopy up
+// (matches sprites.js addTrunkRows).
+function addTrunkRows(sprite: Sprite, n: number): Sprite {
+  const bottom = sprite.rows[0] || []
+  const trunkRow: SpriteCell[] = bottom.map((cell) =>
+    cell && cell[1] ? ["█", cell[1]] : [" ", null]
+  )
+  const extra = Array.from({ length: n }, () => trunkRow.map((c): SpriteCell => [c[0], c[1]]))
+  return { rows: [...extra, ...sprite.rows], width: sprite.width }
+}
+
+function getSprite(
+  type: string,
+  growth: number,
+  variant?: string | null,
+  heightBonus = 0
+): Sprite {
+  let sprite =
+    variant === "ancient"
+      ? ANCIENT[growthStage(growth)]
+      : (SPRITES[type] || SPRITES.oak)[growthStage(growth)]
+  if (heightBonus > 0) sprite = addTrunkRows(sprite, heightBonus)
+  return sprite
 }
 
 const BIOMES: BiomeDef[] = [
@@ -126,7 +164,8 @@ function getBiome(n: number): BiomeDef {
 }
 
 const SKY_ROWS = 4
-const TREE_ROWS = 7
+// Tallest sprite is full ancient (8 rows) plus possible trunk height bonus.
+const TREE_ROWS = 11
 const GROUND_ROWS = 2
 const SCENE_ROWS = SKY_ROWS + TREE_ROWS + GROUND_ROWS
 
@@ -178,7 +217,7 @@ function buildForestBuffer(trees: ForestTree[], cols: number, twinkle: number = 
   const baseY = SKY_ROWS + TREE_ROWS - 1
   for (const t of trees) {
     const displayX = Math.max(2, Math.min(cols - 2, Math.round((t.x / maxX) * (cols - 1))))
-    compositeSprite(buf, getSprite(t.type, t.growth), displayX, baseY, cols)
+    compositeSprite(buf, getSprite(t.type, t.growth, t.variant, t.heightBonus ?? 0), displayX, baseY, cols)
   }
 
   return buf

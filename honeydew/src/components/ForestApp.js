@@ -6,6 +6,7 @@ import os from "node:os";
 import { execSync } from "node:child_process";
 import { getAuth, isLoggedIn } from "../auth.js";
 import { getRewards, syncRewards, uncelebratedUnlocked, markCelebrated } from "../rewards.js";
+import { syncNow } from "../sync.js";
 import UnlockCelebration from "./UnlockCelebration.js";
 
 import ForestScene from "./ForestScene.js";
@@ -74,6 +75,9 @@ export default function ForestApp() {
   useEffect(() => {
     if (!isLoggedIn()) return;
     let cancelled = false;
+    // Push the local forest up once on launch so the web mirror catches up
+    // even if no new tree gets planted this session.
+    syncNow().catch(() => {});
     const pull = () =>
       syncRewards()
         .then((r) => {

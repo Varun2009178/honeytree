@@ -7,11 +7,14 @@ export async function syncToCloud(forest) {
   const auth = getAuth();
   if (!auth || !auth.access_token) return;
 
-  // Send tree data: type, growth, x position for rendering on the web
+  // Send tree data for rendering on the web. variant ("ancient") and
+  // heightBonus must travel too, or gold/tall trees mirror as plain short ones.
   const trees = (forest.trees || []).map((t) => ({
     type: t.type,
     growth: t.growth,
     x: t.x,
+    ...(t.variant ? { variant: t.variant } : {}),
+    ...(t.heightBonus ? { heightBonus: t.heightBonus } : {}),
   }));
 
   try {

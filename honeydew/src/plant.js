@@ -129,8 +129,9 @@ export async function tick(shape = null) {
     if (badgePath) writeBadgeSVG(forest, badgePath);
   } catch {}
 
-  // Cloud sync every 10 prompts (fire-and-forget)
-  if (isLoggedIn() && forest.totalPrompts % 10 === 0) {
+  // Cloud sync on every plant (fire-and-forget) so the web dashboard, which
+  // polls every 20s, mirrors the terminal in near real time.
+  if (isLoggedIn()) {
     syncToCloud(forest).catch(() => {});
   }
 
