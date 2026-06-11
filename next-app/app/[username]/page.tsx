@@ -4,8 +4,9 @@ import { buildProfileModel } from "@/lib/profile"
 import { availableToPlant, virtualToNext } from "@/lib/eligibility"
 import { UserForestDisplay } from "@/components/user-forest-display"
 import { ShareButton } from "./ShareButton"
-import { CopyCommand } from "./CopyCommand"
+import { InstructionsButton } from "./InstructionsButton"
 import { PlantButton } from "./PlantButton"
+import { PlantPopup } from "./PlantPopup"
 import { AutoRefresh } from "./AutoRefresh"
 
 export const dynamic = "force-dynamic"
@@ -49,10 +50,9 @@ export default async function ProfilePage({
   })
 
   const shareUrl = `${SITE_URL}/${model.username}`
-  const isEmpty =
-    model.virtualTrees === 0 && model.realTrees === 0 && model.forest.length === 0
+  const hasForest = model.forest.length > 0
 
-  // 50-virtual-tree cycle: progress resets after each unlocked credit.
+  // 50-virtual-tree cycle: progress resets after each unlocked credit is planted.
   const available = availableToPlant(model.virtualTrees, model.realTrees)
   const toNext = virtualToNext(model.virtualTrees)
   const cycleProgress = 50 - toNext // 0..49 into the current 50-tree cycle
@@ -63,12 +63,22 @@ export default async function ProfilePage({
         maxWidth: 720,
         margin: "0 auto",
         padding: "64px 24px",
-        fontFamily:
-          'ui-sans-serif, -apple-system, "Segoe UI", system-ui, sans-serif',
+        fontFamily: 'ui-sans-serif, -apple-system, "Segoe UI", system-ui, sans-serif',
         color: "#37352f",
       }}
     >
-      <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 40 }}>
+      {/* keeps the forest + stats a live mirror of the terminal */}
+      <AutoRefresh />
+      <PlantPopup username={model.username} available={available} />
+
+      <header
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 36,
+        }}
+      >
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           {model.avatarUrl && (
             // eslint-disable-next-line @next/next/no-img-element
@@ -76,15 +86,16 @@ export default async function ProfilePage({
           )}
           <h1 style={{ fontSize: 22, fontWeight: 600, margin: 0 }}>{model.username}</h1>
         </div>
-        <ShareButton url={shareUrl} />
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <InstructionsButton />
+          <ShareButton url={shareUrl} />
+        </div>
       </header>
-
-      <AutoRefresh />
 
       {planted === "true" && (
         <section
           style={{
-            marginBottom: 32,
+            marginBottom: 28,
             padding: "16px 20px",
             background: "#e6f0ea",
             border: "1px solid #c4dccd",
@@ -95,12 +106,12 @@ export default async function ProfilePage({
           }}
         >
           🎉 <strong>You planted a real tree!</strong> It&apos;s going in the ground via One
-          Tree Planted — a receipt is on its way to your inbox, and a new tree variety just
+          Tree Planted. A receipt is on its way to your inbox, and a new tree variety just
           unlocked in your forest.
         </section>
       )}
 
-      <section style={{ display: "flex", gap: 32, marginBottom: 40 }}>
+      <section style={{ display: "flex", gap: 32, marginBottom: 32 }}>
         <Stat value={model.virtualTrees.toLocaleString()} label="virtual trees grown" />
         <Stat value={model.realTrees.toLocaleString()} label="real trees planted" />
         <Stat value={`${model.co2Kg.toLocaleString()} kg`} label="CO₂ / year" />
@@ -108,7 +119,7 @@ export default async function ProfilePage({
 
       <section
         style={{
-          marginBottom: 40,
+          marginBottom: 32,
           padding: "24px",
           background: "#faf9f7",
           border: "1px solid #ece9e4",
@@ -148,8 +159,8 @@ export default async function ProfilePage({
         </div>
         <p style={{ fontSize: 13, color: "#6b6760", margin: "0 0 18px" }}>
           {available > 0
-            ? `${50}/50 — real tree unlocked! The cycle restarts after you plant.`
-            : `${cycleProgress}/50 virtual trees toward your next real one`}
+            ? "50 / 50. Real tree unlocked. The cycle restarts after you plant."
+            : `${cycleProgress} / 50 virtual trees toward your next real one`}
         </p>
 
         <PlantButton username={model.username} available={available} toNext={toNext} />
@@ -157,7 +168,7 @@ export default async function ProfilePage({
         {model.realTrees > 0 && (
           <p style={{ fontSize: 13, color: "#4a7c59", margin: "16px 0 0", lineHeight: 1.6 }}>
             🌳 {model.realTrees.toLocaleString()} real tree
-            {model.realTrees === 1 ? "" : "s"} planted so far — absorbing about{" "}
+            {model.realTrees === 1 ? "" : "s"} planted so far, absorbing about{" "}
             {model.co2Kg.toLocaleString()} kg of CO₂ every year. Each one unlocks new tree
             colors that grow in your forest below.
           </p>
@@ -165,7 +176,7 @@ export default async function ProfilePage({
       </section>
 
       {model.varieties.length > 0 && (
-        <section style={{ marginBottom: 40 }}>
+        <section style={{ marginBottom: 32 }}>
           <h2 style={{ fontSize: 13, textTransform: "uppercase", letterSpacing: 1, color: "#9b9a97", marginBottom: 12 }}>
             Unlocked varieties
           </h2>
@@ -182,22 +193,15 @@ export default async function ProfilePage({
         </section>
       )}
 
-      {isEmpty ? (
-        <Onboarding />
-      ) : (
-        <section
-          style={{
-            background: "#0c1410",
-            borderRadius: 12,
-            padding: 16,
-            overflow: "hidden",
-          }}
-        >
-          <UserForestDisplay trees={model.forest} />
-        </section>
+      <section style={{ background: "#0c1410", borderRadius: 12, padding: 16, overflow: "hidden" }}>
+        <UserForestDisplay trees={model.forest} />
+      </section>
+      {!hasForest && (
+        <p style={{ fontSize: 13, color: "#9b9a97", margin: "12px 0 0", textAlign: "center" }}>
+          No trees yet. Run <Cmd>honeytree</Cmd> in your terminal and start prompting in
+          Claude Code. (See Instructions, top right.)
+        </p>
       )}
-
-      <HowItWorks />
 
       <footer style={{ marginTop: 48, textAlign: "center" }}>
         <a
@@ -211,136 +215,7 @@ export default async function ProfilePage({
   )
 }
 
-const ONE_LINER = "npm install -g honeytree@latest && honeytree init && honeytree login"
-
-const ONBOARDING_CMDS = [
-  { cmd: "npm install -g honeytree@latest", note: "Install the CLI" },
-  { cmd: "honeytree init", note: "Register the Claude Code hook" },
-  { cmd: "honeytree login", note: "Link this account" },
-  { cmd: "honeytree", note: "Watch your forest grow" },
-]
-
-function Onboarding() {
-  return (
-    <section
-      style={{
-        background: "#faf9f7",
-        border: "1px solid #ece9e4",
-        borderRadius: 12,
-        padding: "28px 24px",
-      }}
-    >
-      <h2 style={{ fontSize: 16, fontWeight: 600, margin: "0 0 6px" }}>
-        Your forest is empty &mdash; let&apos;s plant the first tree.
-      </h2>
-      <p style={{ fontSize: 14, color: "#6b6760", margin: "0 0 20px" }}>
-        Run these four commands in your terminal. Every Claude Code prompt then plants a
-        tree here automatically.
-      </p>
-      <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 10 }}>
-        {ONBOARDING_CMDS.map((c, i) => (
-          <li key={c.cmd} style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <span
-              style={{
-                flexShrink: 0,
-                width: 24,
-                height: 24,
-                borderRadius: "50%",
-                background: "#e6f0ea",
-                color: "#4a7c59",
-                fontSize: 12,
-                fontWeight: 700,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              {i + 1}
-            </span>
-            <code
-              style={{
-                flex: 1,
-                padding: "12px 14px",
-                background: "#0d0e10",
-                borderRadius: 8,
-                fontFamily: "ui-monospace, Menlo, monospace",
-                fontSize: 14,
-                color: "#e7e5e4",
-              }}
-            >
-              <span style={{ color: "#5b9a4a", marginRight: 8 }}>$</span>
-              {c.cmd}
-            </code>
-            <span style={{ fontSize: 12, color: "#9b9a97", minWidth: 110 }}>{c.note}</span>
-          </li>
-        ))}
-      </ol>
-
-      <p style={{ fontSize: 13, color: "#9b9a97", margin: "20px 0 8px" }}>
-        Or set everything up in one go:
-      </p>
-      <CopyCommand command={ONE_LINER} />
-    </section>
-  )
-}
-
-function HowItWorks() {
-  return (
-    <section
-      style={{
-        marginTop: 40,
-        background: "#faf9f7",
-        border: "1px solid #ece9e4",
-        borderRadius: 12,
-        padding: "24px",
-      }}
-    >
-      <h2
-        style={{
-          fontSize: 13,
-          textTransform: "uppercase",
-          letterSpacing: 1,
-          color: "#9b9a97",
-          margin: "0 0 14px",
-        }}
-      >
-        How Honeytree works
-      </h2>
-      <ul
-        style={{
-          listStyle: "none",
-          margin: 0,
-          padding: 0,
-          display: "grid",
-          gap: 10,
-          fontSize: 14,
-          color: "#55504a",
-          lineHeight: 1.55,
-        }}
-      >
-        <li>
-          🌱 Every Claude Code prompt automatically plants a virtual tree in your forest —
-          bigger responses grow taller trees.
-        </li>
-        <li>
-          💻 Run <InlineCmd>honeytree</InlineCmd> in your terminal anytime to watch your
-          forest live while you code. This page is its shareable mirror.
-        </li>
-        <li>
-          🌍 Every 50 virtual trees unlocks a real tree planting for $1 — run{" "}
-          <InlineCmd>honeytree plant</InlineCmd> to plant it.
-        </li>
-        <li>
-          ✨ Real trees unlock new varieties (cherry blossom, pine, oak, ancient, mythic)
-          that start appearing in your forest. Check progress with{" "}
-          <InlineCmd>honeytree rewards</InlineCmd>.
-        </li>
-      </ul>
-    </section>
-  )
-}
-
-function InlineCmd({ children }: { children: React.ReactNode }) {
+function Cmd({ children }: { children: React.ReactNode }) {
   return (
     <code
       style={{
