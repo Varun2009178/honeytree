@@ -11,7 +11,6 @@ const STATS_TEXT = "#8e8a84";
 const STATS_WARN = "#c4653a";
 const STREAK_COLOR = "#e8a33a";
 const BAR_FILL = "#6cb95e";
-const BAR_EMPTY = "#3d3d3d";
 
 export default function StatsBar({ forest, viewportX, termWidth, rewards }) {
   const vw = getVirtualWidth(forest.trees.length, termWidth);
@@ -19,9 +18,6 @@ export default function StatsBar({ forest, viewportX, termWidth, rewards }) {
     () => getStatsData(forest, viewportX, vw, termWidth),
     [forest, viewportX, vw, termWidth],
   );
-
-  const barWidth = 12;
-  const filledWidth = Math.max(0, Math.min(barWidth, Math.round(stats.progress * barWidth)));
 
   // Minimap
   let minimap = null;
@@ -55,11 +51,6 @@ export default function StatsBar({ forest, viewportX, termWidth, rewards }) {
       h(Text, { color: STATS_ACCENT }, " honeytree"),
       h(Text, { color: STATS_TEXT }, ` · ${stats.treeCount} tree${stats.treeCount === 1 ? "" : "s"} · `),
       streakSegment,
-      h(Text, { color: STATS_TEXT }, " · "),
-      h(Text, { color: BAR_FILL }, "█".repeat(filledWidth)),
-      h(Text, { color: BAR_EMPTY }, "░".repeat(barWidth - filledWidth)),
-      h(Text, { color: STATS_TEXT }, ` next: ${stats.nextTreeType}`),
-      h(Text, { color: "#555555" }, ` [${stats.biomeName}]`),
       minimap,
     ),
     h(Box, null,
