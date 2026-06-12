@@ -1,6 +1,6 @@
 {
   "name": "honeytree",
-  "version": "1.2.5",
+  "version": "1.2.6",
   "description": "code with claude, and watch your forest grow! ",
   "type": "module",
   "bin": {
