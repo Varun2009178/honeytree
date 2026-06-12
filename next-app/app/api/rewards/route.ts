@@ -24,11 +24,23 @@ export async function GET(req: NextRequest) {
 
   const supabase = getSupabase()
 
-  const { data: rewards } = await supabase
-    .from("rewards")
-    .select("badge_slug, unlocked_at")
-    .eq("user_id", user.id)
-    .order("unlocked_at", { ascending: true })
+  const [{ data: rewards }, { data: plantings }] = await Promise.all([
+    supabase
+      .from("rewards")
+      .select("badge_slug, unlocked_at")
+      .eq("user_id", user.id)
+      .order("unlocked_at", { ascending: true }),
+    supabase
+      .from("plantings")
+      .select("real_trees_planted")
+      .eq("user_id", user.id)
+      .eq("status", "completed"),
+  ])
+
+  const realTreesPlanted = (plantings || []).reduce(
+    (sum, p) => sum + (p.real_trees_planted || 0),
+    0
+  )
 
   const unlockedSlugs = (rewards || []).map((r) => r.badge_slug)
 
@@ -38,5 +50,5 @@ export async function GET(req: NextRequest) {
     unlocked_at: rewards?.find((rw) => rw.badge_slug === r.slug)?.unlocked_at ?? null,
   }))
 
-  return NextResponse.json({ rewards: all })
+  return NextResponse.json({ rewards: all, real_trees_planted: realTreesPlanted })
 }

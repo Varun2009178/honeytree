@@ -1,4 +1,4 @@
-import { getAuth, saveAuth } from "./auth.js";
+import { getAuth, saveAuth, authedFetch } from "./auth.js";
 import { readForest } from "./state.js";
 
 const API_URL = process.env.HONEYTREE_API_URL || "https://www.tryhoney.xyz";
@@ -18,12 +18,10 @@ export async function syncToCloud(forest) {
   }));
 
   try {
-    const res = await fetch(`${API_URL}/api/sync`, {
+    // authedFetch refreshes the access token and retries once on 401.
+    const res = await authedFetch(`${API_URL}/api/sync`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${auth.access_token}`,
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         count: forest.totalPrompts,
         streak: forest.streak || 0,
@@ -31,9 +29,10 @@ export async function syncToCloud(forest) {
       }),
     });
 
-    if (res.ok) {
-      auth.lastSyncedPrompts = forest.totalPrompts;
-      saveAuth(auth);
+    if (res && res.ok) {
+      const fresh = getAuth() || auth;
+      fresh.lastSyncedPrompts = forest.totalPrompts;
+      saveAuth(fresh);
     }
   } catch {
     // Silently fail — sync is best-effort

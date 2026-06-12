@@ -11,6 +11,17 @@ export const VARIETIES = [
   { key: "mythic",   threshold: 10, label: "Mythic",         species: [{ type: "mythic" }] },
 ];
 
+// The forest grows one variety at a time: each real-tree payment wipes the
+// forest and starts a new era where every tree takes the LATEST unlocked
+// variety. Standard (birch/willow) before any unlock.
+export function eraSpecies(unlockedKeys = []) {
+  const keys = new Set(unlockedKeys);
+  for (let i = VARIETIES.length - 1; i >= 1; i--) {
+    if (keys.has(VARIETIES[i].key)) return VARIETIES[i].species;
+  }
+  return VARIETIES[0].species;
+}
+
 // Build the species pool from the set of unlocked variety keys.
 // `standard` is always included.
 export function unlockedPool(unlockedKeys = []) {

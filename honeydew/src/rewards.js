@@ -46,15 +46,18 @@ export async function syncRewards(apiUrl) {
   if (!auth || !auth.access_token) return null;
 
   try {
-    const res = await fetch(`${apiUrl}/api/rewards`, {
-      headers: { Authorization: `Bearer ${auth.access_token}` },
-    });
+    const { authedFetch } = await import("./auth.js");
+    // authedFetch refreshes the 1-hour access token and retries once on 401.
+    const res = await authedFetch(`${apiUrl}/api/rewards`);
+    if (!res || !res.ok) return null;
 
-    if (!res.ok) return null;
-
-    const { rewards } = await res.json();
+    const { rewards, real_trees_planted } = await res.json();
     const unlocked = rewards.filter((r) => r.unlocked);
     const slugs = unlocked.map((r) => r.slug);
+
+    const prev = getRewards();
+    const prevReal = typeof prev.realTrees === "number" ? prev.realTrees : null;
+    const serverReal = typeof real_trees_planted === "number" ? real_trees_planted : 0;
 
     const data = {
       badges: unlocked.map((r) => ({ slug: r.slug, label: r.label, description: r.description })),
@@ -63,15 +66,39 @@ export async function syncRewards(apiUrl) {
       oak: slugs.includes("oak"),
       ancient: slugs.includes("ancient"),
       mythic: slugs.includes("mythic"),
-      celebrated: getRewards().celebrated,
+      celebrated: prev.celebrated,
+      realTrees: serverReal,
       username: auth.username || "",
     };
 
     saveRewards(data);
+
+    // A real tree was paid for since we last looked: the old forest is cleared
+    // and a fresh era begins (all new trees take the latest unlocked variety).
+    // The cumulative prompt counter survives, so "virtual trees grown" on the
+    // site keeps its total. First sync after upgrade only sets the baseline.
+    if (prevReal !== null && serverReal > prevReal) {
+      await wipeForestForNewEra();
+    }
+
     return data;
   } catch {
     return null;
   }
+}
+
+// Clear all trees locally and push the empty forest up so the dashboard
+// mirrors the reset. totalPrompts/streak are kept.
+async function wipeForestForNewEra() {
+  const { readForest, writeForest } = await import("./state.js");
+  const forest = readForest();
+  if (!forest) return;
+  forest.trees = [];
+  writeForest(forest);
+  try {
+    const { syncToCloud } = await import("./sync.js");
+    await syncToCloud(forest);
+  } catch {}
 }
 
 // Print rewards status to console

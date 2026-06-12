@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import { readForest, createEmptyForest } from "./state.js";
 import { getUnlockedVarietyKeys } from "./rewards.js";
-import { unlockedPool, pickSpecies } from "./varieties.js";
+import { eraSpecies, pickSpecies } from "./varieties.js";
 import { getPlantWidth, findOpenX } from "./plant.js";
 import { writeActiveSession, readActiveSession, clearActiveSession } from "./session.js";
 import { readTurnTokens } from "./transcript.js";
@@ -22,7 +22,7 @@ export function startTurn(payload) {
   if (!transcript_path) return;
 
   const forest = readForest() ?? createEmptyForest();
-  const species = pickSpecies(unlockedPool(getUnlockedVarietyKeys()));
+  const species = pickSpecies(eraSpecies(getUnlockedVarietyKeys()));
   const type = species.type;
   const variant = species.variant ?? null;
   const width = getPlantWidth(forest);

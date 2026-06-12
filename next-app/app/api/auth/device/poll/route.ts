@@ -24,6 +24,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       status: "complete",
       access_token: entry.accessToken,
+      refresh_token: entry.refreshToken ?? null,
       user: {
         id: entry.userId,
         username: entry.username,

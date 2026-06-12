@@ -65,7 +65,11 @@ function Completing() {
               "Content-Type": "application/json",
               Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify({ user_code: deviceCode }),
+            body: JSON.stringify({
+              user_code: deviceCode,
+              // The CLI needs this to refresh its 1-hour access token.
+              refresh_token: session.refresh_token,
+            }),
           })
           linked = res.ok
         } catch {}

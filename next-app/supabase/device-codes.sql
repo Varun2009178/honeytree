@@ -11,11 +11,15 @@ create table if not exists public.device_codes (
   user_code text not null,
   status text not null default 'pending',
   access_token text,
+  refresh_token text,
   user_id uuid,
   username text,
   expires_at timestamptz not null,
   created_at timestamptz not null default now()
 );
+
+-- Upgrade for tables created before refresh-token support (safe to re-run).
+alter table public.device_codes add column if not exists refresh_token text;
 
 create index if not exists idx_device_codes_user_code
   on public.device_codes (user_code);

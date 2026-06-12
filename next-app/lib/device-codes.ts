@@ -9,6 +9,7 @@ export interface DeviceCodeEntry {
   expiresAt: number
   status: "pending" | "complete"
   accessToken?: string
+  refreshToken?: string
   userId?: string
   username?: string
 }
@@ -18,6 +19,7 @@ interface DeviceCodeRow {
   user_code: string
   status: "pending" | "complete"
   access_token: string | null
+  refresh_token: string | null
   user_id: string | null
   username: string | null
   expires_at: string
@@ -29,6 +31,7 @@ function rowToEntry(row: DeviceCodeRow): DeviceCodeEntry {
     expiresAt: new Date(row.expires_at).getTime(),
     status: row.status,
     accessToken: row.access_token ?? undefined,
+    refreshToken: row.refresh_token ?? undefined,
     userId: row.user_id ?? undefined,
     username: row.username ?? undefined,
   }
@@ -65,7 +68,7 @@ export async function deleteDeviceCode(deviceCode: string): Promise<void> {
 // Mark the entry for a user-typed code as complete with the web user's session.
 export async function completeByUserCode(
   userCode: string,
-  data: { accessToken: string; userId: string; username: string }
+  data: { accessToken: string; refreshToken?: string; userId: string; username: string }
 ): Promise<"ok" | "not_found" | "expired"> {
   const db = getSupabase()
   const { data: row } = await db
@@ -85,6 +88,7 @@ export async function completeByUserCode(
     .update({
       status: "complete",
       access_token: data.accessToken,
+      refresh_token: data.refreshToken ?? null,
       user_id: data.userId,
       username: data.username,
     })

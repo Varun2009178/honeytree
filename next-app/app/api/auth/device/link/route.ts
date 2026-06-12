@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js"
 import { completeByUserCode } from "@/lib/device-codes"
 
 export async function POST(req: NextRequest) {
-  const { user_code } = await req.json()
+  const { user_code, refresh_token } = await req.json()
 
   if (!user_code || typeof user_code !== "string") {
     return NextResponse.json({ error: "user_code required" }, { status: 400 })
@@ -31,6 +31,7 @@ export async function POST(req: NextRequest) {
     data.user.user_metadata?.user_name || data.user.email || ""
   const result = await completeByUserCode(user_code.trim(), {
     accessToken: token,
+    refreshToken: typeof refresh_token === "string" ? refresh_token : undefined,
     userId: data.user.id,
     username,
   })

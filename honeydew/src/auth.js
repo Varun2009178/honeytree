@@ -29,6 +29,51 @@ export function isLoggedIn() {
   return !!(auth && auth.access_token);
 }
 
+// Supabase access tokens live ~1 hour. Trade the stored refresh token for a
+// fresh pair so syncs keep working between logins.
+export async function refreshAuth(apiUrl) {
+  apiUrl = apiUrl || process.env.HONEYTREE_API_URL || "https://www.tryhoney.xyz";
+  const auth = getAuth();
+  if (!auth || !auth.refresh_token) return null;
+  try {
+    const res = await fetch(`${apiUrl}/api/auth/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh_token: auth.refresh_token }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data.access_token) return null;
+    const next = {
+      ...auth,
+      access_token: data.access_token,
+      refresh_token: data.refresh_token || auth.refresh_token,
+    };
+    saveAuth(next);
+    return next;
+  } catch {
+    return null;
+  }
+}
+
+// Bearer fetch that retries once through a token refresh on 401.
+// Returns null when not logged in.
+export async function authedFetch(url, options = {}) {
+  const auth = getAuth();
+  if (!auth || !auth.access_token) return null;
+  const doFetch = (token) =>
+    fetch(url, {
+      ...options,
+      headers: { ...(options.headers || {}), Authorization: `Bearer ${token}` },
+    });
+  let res = await doFetch(auth.access_token);
+  if (res.status === 401) {
+    const refreshed = await refreshAuth();
+    if (refreshed) res = await doFetch(refreshed.access_token);
+  }
+  return res;
+}
+
 export async function loginWithDevice(apiUrl = process.env.HONEYTREE_API_URL || "https://www.tryhoney.xyz") {
   const res = await fetch(`${apiUrl}/api/auth/device`, { method: "POST" });
   const contentType = res.headers.get("content-type") || "";
@@ -74,6 +119,7 @@ export async function loginWithDevice(apiUrl = process.env.HONEYTREE_API_URL || 
       if (data.status === "complete") {
         saveAuth({
           access_token: data.access_token,
+          refresh_token: data.refresh_token || null,
           user_id: data.user.id,
           username: data.user.username,
         });

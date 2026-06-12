@@ -64,15 +64,12 @@ if (command === "init") {
   console.log("  Done.");
 } else if (command === "rewards") {
   const { isLoggedIn } = await import("../src/auth.js");
-  const { syncRewards, printRewardsStatus } = await import("../src/rewards.js");
-  const { readForest } = await import("../src/state.js");
+  const { syncRewards, printRewardsStatus, getRewards } = await import("../src/rewards.js");
   if (isLoggedIn()) {
     console.log("  Fetching rewards...");
     await syncRewards();
   }
-  const forest = readForest();
-  const realTrees = 0; // local doesn't know real trees; printRewardsStatus uses cached data
-  printRewardsStatus(realTrees);
+  printRewardsStatus(getRewards().realTrees || 0);
 } else if (command === "status") {
   const { getAuth } = await import("../src/auth.js");
   const auth = getAuth();

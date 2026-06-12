@@ -1,6 +1,6 @@
 import { getSprite } from "./sprites.js";
 import { getUnlockedVarietyKeys } from "./rewards.js";
-import { unlockedPool, pickSpecies } from "./varieties.js";
+import { eraSpecies, pickSpecies } from "./varieties.js";
 import { createEmptyForest, readForest, writeForest } from "./state.js";
 import { findBadgeFile, writeBadgeSVG } from "./badge.js";
 import { migrateLayout } from "./migrate.js";
@@ -107,7 +107,7 @@ export async function tick(shape = null) {
   let type = shape?.type;
   let variant = shape?.variant ?? null;
   if (!type) {
-    const species = pickSpecies(unlockedPool(getUnlockedVarietyKeys()));
+    const species = pickSpecies(eraSpecies(getUnlockedVarietyKeys()));
     type = species.type;
     variant = species.variant ?? null;
   }
