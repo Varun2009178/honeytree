@@ -274,11 +274,12 @@ function buildStatsLine(forest, biome, viewportX = 0, virtualWidth = 0, termWidt
   if (virtualWidth > termWidth) {
     const mapWidth = 12;
     const viewFraction = termWidth / virtualWidth;
-    const thumbWidth = Math.max(1, Math.round(viewFraction * mapWidth));
+    // Clamp everything: viewportX can be stale (resize, forest re-layout) and
+    // rounding can overshoot — a negative .repeat() crashes the whole frame.
+    const thumbWidth = Math.max(1, Math.min(mapWidth, Math.round(viewFraction * mapWidth)));
     const maxOffset = virtualWidth - termWidth;
-    const thumbPos = maxOffset > 0
-      ? Math.round((viewportX / maxOffset) * (mapWidth - thumbWidth))
-      : 0;
+    const ratio = maxOffset > 0 ? Math.min(1, Math.max(0, viewportX / maxOffset)) : 0;
+    const thumbPos = Math.round(ratio * (mapWidth - thumbWidth));
     const mapBar =
       "─".repeat(thumbPos) +
       "═".repeat(thumbWidth) +

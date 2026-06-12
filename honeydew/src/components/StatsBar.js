@@ -24,11 +24,12 @@ export default function StatsBar({ forest, viewportX, termWidth, rewards }) {
   if (stats.virtualWidth > stats.termWidth) {
     const mapWidth = 12;
     const viewFraction = stats.termWidth / stats.virtualWidth;
-    const thumbWidth = Math.max(1, Math.round(viewFraction * mapWidth));
+    // Clamp everything: viewportX can be stale (resize, forest re-layout) and
+    // rounding can overshoot — a negative .repeat() crashes the whole frame.
+    const thumbWidth = Math.max(1, Math.min(mapWidth, Math.round(viewFraction * mapWidth)));
     const maxOffset = stats.virtualWidth - stats.termWidth;
-    const thumbPos = maxOffset > 0
-      ? Math.round((stats.viewportX / maxOffset) * (mapWidth - thumbWidth))
-      : 0;
+    const ratio = maxOffset > 0 ? Math.min(1, Math.max(0, stats.viewportX / maxOffset)) : 0;
+    const thumbPos = Math.round(ratio * (mapWidth - thumbWidth));
     const mapBar =
       "─".repeat(thumbPos) +
       "═".repeat(thumbWidth) +

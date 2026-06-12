@@ -2,6 +2,7 @@ import { notFound } from "next/navigation"
 import { getSupabase } from "@/lib/supabase"
 import { buildProfileModel } from "@/lib/profile"
 import { availableToPlant, virtualToNext } from "@/lib/eligibility"
+import { REWARD_THRESHOLDS } from "@/lib/rewards"
 import { UserForestDisplay } from "@/components/user-forest-display"
 import { ShareButton } from "./ShareButton"
 import { InstructionsButton } from "./InstructionsButton"
@@ -14,6 +15,14 @@ import { OwnerGate } from "./OwnerGate"
 export const dynamic = "force-dynamic"
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.tryhoney.xyz"
+
+const REWARD_EMOJI: Record<string, string> = {
+  cherry: "🌸",
+  pine: "🌲",
+  oak: "🌳",
+  ancient: "✨",
+  mythic: "🔮",
+}
 
 export default async function ProfilePage({
   params,
@@ -196,23 +205,39 @@ export default async function ProfilePage({
         )}
       </section>
 
-      {model.varieties.length > 0 && (
-        <section style={{ marginBottom: 32 }}>
-          <h2 style={{ fontSize: 13, textTransform: "uppercase", letterSpacing: 1, color: "#9b9a97", marginBottom: 12 }}>
-            Unlocked varieties
-          </h2>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            {model.varieties.map((v) => (
-              <span
-                key={v.slug}
-                style={{ padding: "4px 12px", borderRadius: 999, background: "#f1f1ef", fontSize: 13 }}
+      <section style={{ marginBottom: 32 }}>
+        <h2 style={{ fontSize: 13, textTransform: "uppercase", letterSpacing: 1, color: "#9b9a97", marginBottom: 12 }}>
+          Rewards
+        </h2>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(126px, 1fr))", gap: 8 }}>
+          {REWARD_THRESHOLDS.map((r) => {
+            const unlocked = model.varieties.some((v) => v.slug === r.slug)
+            return (
+              <div
+                key={r.slug}
+                style={{
+                  padding: "12px 10px",
+                  borderRadius: 10,
+                  textAlign: "center",
+                  background: unlocked ? "#e6f0ea" : "#f7f6f4",
+                  border: `1px solid ${unlocked ? "#c4dccd" : "#ece9e4"}`,
+                  opacity: unlocked ? 1 : 0.75,
+                }}
               >
-                {v.label}
-              </span>
-            ))}
-          </div>
-        </section>
-      )}
+                <div style={{ fontSize: 22, filter: unlocked ? "none" : "grayscale(1)" }}>
+                  {REWARD_EMOJI[r.slug] ?? "🌳"}
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 600, margin: "4px 0 2px" }}>{r.label}</div>
+                <div style={{ fontSize: 11.5, color: unlocked ? "#4a7c59" : "#9b9a97" }}>
+                  {unlocked
+                    ? "Unlocked"
+                    : `${r.threshold} real tree${r.threshold === 1 ? "" : "s"}`}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </section>
       </OwnerGate>
 
       <div

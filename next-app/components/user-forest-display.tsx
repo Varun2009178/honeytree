@@ -194,13 +194,25 @@ function compositeSprite(buf: Cell[][], sprite: Sprite, cx: number, baseY: numbe
   }
 }
 
-function buildForestBuffer(trees: ForestTree[], cols: number, twinkle: number = 0): Cell[][] {
+// Trees keep their native CLI x positions; the buffer is a `cols`-wide window
+// starting at viewportX. Crowded forests pan instead of piling up.
+export function forestVirtualWidth(trees: ForestTree[], cols: number): number {
+  const maxX = trees.length ? Math.max(...trees.map((t) => t.x)) : 0
+  return Math.max(cols, maxX + 8)
+}
+
+function buildForestBuffer(
+  trees: ForestTree[],
+  cols: number,
+  twinkle: number = 0,
+  viewportX: number = 0
+): Cell[][] {
   const biome = getBiome(trees.length)
   const buf = mkBuf(cols, SCENE_ROWS)
 
-  // Stars
+  // Stars — hashed on absolute world x so they pan with the forest
   for (let x = 0; x < cols; x++) {
-    const h2 = hash(x + cols * 17 + twinkle * 101)
+    const h2 = hash(viewportX + x + 9173 + twinkle * 101)
     if (h2 % biome.density !== 0) continue
     const y = h2 % SKY_ROWS
     buf[y][x] = { ch: biome.glyphs[h2 % biome.glyphs.length], col: biome.colors[h2 % biome.colors.length] }
@@ -212,11 +224,11 @@ function buildForestBuffer(trees: ForestTree[], cols: number, twinkle: number = 
     for (let x = 0; x < cols; x++)
       buf[gy + r][x] = { ch: "\u2588", col: biome.ground[r] }
 
-  // Trees — map x from forest virtual width to display cols
-  const maxX = Math.max(...trees.map((t) => t.x), 80)
+  // Trees at native positions, shifted by the viewport
   const baseY = SKY_ROWS + TREE_ROWS - 1
   for (const t of trees) {
-    const displayX = Math.max(2, Math.min(cols - 2, Math.round((t.x / maxX) * (cols - 1))))
+    const displayX = t.x - viewportX
+    if (displayX < -12 || displayX > cols + 12) continue
     compositeSprite(buf, getSprite(t.type, t.growth, t.variant, t.heightBonus ?? 0), displayX, baseY, cols)
   }
 
@@ -247,10 +259,13 @@ const FONT_PX = 12
 const LINE_H = 1.28
 const CHAR_W = FONT_PX * 0.601
 
+const PAN_STEP = 10
+
 export function UserForestDisplay({ trees }: { trees: ForestTree[] }) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(0)
   const [twinkle, setTwinkle] = useState(0)
+  const [viewportX, setViewportX] = useState(0)
 
   useEffect(() => {
     if (!wrapRef.current) return
@@ -266,10 +281,39 @@ export function UserForestDisplay({ trees }: { trees: ForestTree[] }) {
   }, [])
 
   const cols = Math.max(40, Math.floor(width / CHAR_W))
-  const buf = useMemo(() => buildForestBuffer(trees, cols, twinkle), [trees, cols, twinkle])
+  const virtualWidth = forestVirtualWidth(trees, cols)
+  const maxOffset = Math.max(0, virtualWidth - cols)
+  const pannable = maxOffset > 0
+
+  const pan = (delta: number) =>
+    setViewportX((x) => Math.max(0, Math.min(maxOffset, x + delta)))
+
+  // Keep the viewport valid as the forest grows/shrinks or the box resizes.
+  useEffect(() => {
+    setViewportX((x) => Math.max(0, Math.min(maxOffset, x)))
+  }, [maxOffset])
+
+  // Arrow keys pan the forest (ignored while typing in a field).
+  useEffect(() => {
+    if (!pannable) return
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName
+      if (tag === "INPUT" || tag === "TEXTAREA" || (e.target as HTMLElement)?.isContentEditable) return
+      if (e.key === "ArrowLeft") { e.preventDefault(); pan(-PAN_STEP) }
+      else if (e.key === "ArrowRight") { e.preventDefault(); pan(PAN_STEP) }
+    }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pannable, maxOffset])
+
+  const buf = useMemo(
+    () => buildForestBuffer(trees, cols, twinkle, viewportX),
+    [trees, cols, twinkle, viewportX]
+  )
 
   return (
-    <div ref={wrapRef} className="user-forest-wrap">
+    <div ref={wrapRef} className="user-forest-wrap" style={{ position: "relative" }}>
       {width > 0 && (
         <pre
           style={{
@@ -286,6 +330,27 @@ export function UserForestDisplay({ trees }: { trees: ForestTree[] }) {
             <BufRow key={ri} cells={row} />
           ))}
         </pre>
+      )}
+      {pannable && (
+        <>
+          <button
+            className="forest-pan forest-pan-left"
+            onClick={() => pan(-PAN_STEP * 3)}
+            disabled={viewportX <= 0}
+            aria-label="Pan left"
+          >
+            ‹
+          </button>
+          <button
+            className="forest-pan forest-pan-right"
+            onClick={() => pan(PAN_STEP * 3)}
+            disabled={viewportX >= maxOffset}
+            aria-label="Pan right"
+          >
+            ›
+          </button>
+          <div className="forest-pan-hint">← → pan</div>
+        </>
       )}
     </div>
   )

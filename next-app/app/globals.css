@@ -712,6 +712,25 @@ pre{font-family:var(--mono)}
 .forest-refresh.spinning{animation:refresh-spin 700ms linear infinite;color:#4a7c59}
 @keyframes refresh-spin{to{transform:rotate(360deg)}}
 
+/* pan controls overlaid on the forest when it's wider than the view */
+.forest-pan{
+  position:absolute;top:50%;transform:translateY(-50%);
+  width:28px;height:44px;border-radius:8px;border:0;cursor:pointer;
+  background:rgba(255,255,255,.08);color:rgba(255,255,255,.75);
+  font-size:20px;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+  transition:background 140ms,opacity 140ms;
+}
+.forest-pan:hover{background:rgba(255,255,255,.18)}
+.forest-pan:disabled{opacity:.25;cursor:default}
+.forest-pan-left{left:4px}
+.forest-pan-right{right:4px}
+.forest-pan-hint{
+  position:absolute;right:10px;bottom:6px;
+  font-family:"IBM Plex Mono",monospace;font-size:10px;
+  color:rgba(255,255,255,.45);pointer-events:none;
+}
+
 /* ── auth callback page ────────────────────────────────── */
 .callback-page{
   min-height:80vh;

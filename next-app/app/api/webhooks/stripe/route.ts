@@ -200,11 +200,19 @@ export async function POST(req: NextRequest) {
           })
 
           if (profile?.email) {
-            await sendReceiptEmail(profile.email, model)
-            await supabase
-              .from("plantings")
-              .update({ email_sent_at: new Date().toISOString() })
-              .eq("stripe_session_id", session.id)
+            const sent = await sendReceiptEmail(profile.email, model)
+            // Only stamp email_sent_at when the send actually went out —
+            // a skipped (no RESEND_API_KEY) or failed send must stay visible.
+            if (!sent.skipped && !sent.error) {
+              await supabase
+                .from("plantings")
+                .update({ email_sent_at: new Date().toISOString() })
+                .eq("stripe_session_id", session.id)
+            } else {
+              console.error(
+                `[webhook] receipt email not sent (skipped=${sent.skipped}, error=${sent.error ?? "none"})`
+              )
+            }
           }
         } catch (e) {
           console.error("[webhook] receipt email step failed:", e)
